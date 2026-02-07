@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from 'react'
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -6,7 +6,9 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import {
   differenceInDays,
   startOfDay,
+  startOfMonth,
   addDays,
+  addMonths,
   format,
   isWeekend,
   min as dateMin,
@@ -16,8 +18,9 @@ import { ja } from 'date-fns/locale'
 
 const DAY_WIDTH = 32
 const ROW_HEIGHT = 36
-const HEADER_HEIGHT = 52
+const HEADER_HEIGHT = 72
 const HANDLE_WIDTH = 8
+const MONTH_HEADER_HEIGHT = 24
 
 type DragMode = 'move' | 'resize-start' | 'resize-end'
 
@@ -79,19 +82,26 @@ export function GanttView() {
     return [...ganttTasks].sort((a, b) => a.start.getTime() - b.start.getTime())
   }, [ganttTasks])
 
-  // 表示範囲計算
+  // 表示範囲計算（前後3ヶ月のパディング付き）
   const { minDate, totalDays } = useMemo(() => {
+    const today = startOfDay(new Date())
     if (sortedGanttTasks.length === 0) {
-      const today = startOfDay(new Date())
-      return { minDate: addDays(today, -7), totalDays: 37 }
+      const rangeStart = startOfMonth(addMonths(today, -3))
+      const rangeEnd = addDays(startOfMonth(addMonths(today, 4)), -1)
+      return {
+        minDate: rangeStart,
+        totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
+      }
     }
     const allStarts = sortedGanttTasks.map((t) => t.start)
     const allEnds = sortedGanttTasks.map((t) => t.end)
-    const earliest = addDays(dateMin(allStarts), -3)
-    const latest = addDays(dateMax(allEnds), 7)
+    const earliest = dateMin([...allStarts, today])
+    const latest = dateMax([...allEnds, today])
+    const rangeStart = startOfMonth(addMonths(earliest, -3))
+    const rangeEnd = addDays(startOfMonth(addMonths(latest, 4)), -1)
     return {
-      minDate: earliest,
-      totalDays: differenceInDays(latest, earliest) + 1,
+      minDate: rangeStart,
+      totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
     }
   }, [sortedGanttTasks])
 
@@ -102,6 +112,49 @@ export function GanttView() {
 
   // 今日の位置
   const todayOffset = differenceInDays(startOfDay(new Date()), minDate)
+
+  // 月ヘッダー生成
+  const monthHeaders = useMemo(() => {
+    const headers: { label: string; startIndex: number; span: number }[] = []
+    let currentMonth = -1
+    let currentYear = -1
+    let startIndex = 0
+
+    for (let i = 0; i < days.length; i++) {
+      const d = days[i]
+      const m = d.getMonth()
+      const y = d.getFullYear()
+      if (m !== currentMonth || y !== currentYear) {
+        if (currentMonth !== -1) {
+          headers.push({
+            label: format(days[startIndex], 'yyyy年M月', { locale: ja }),
+            startIndex,
+            span: i - startIndex,
+          })
+        }
+        currentMonth = m
+        currentYear = y
+        startIndex = i
+      }
+    }
+    // 最後の月
+    if (days.length > 0) {
+      headers.push({
+        label: format(days[startIndex], 'yyyy年M月', { locale: ja }),
+        startIndex,
+        span: days.length - startIndex,
+      })
+    }
+    return headers
+  }, [days])
+
+  // 初回マウント時に今日の位置にスクロール
+  useEffect(() => {
+    if (containerRef.current && todayOffset >= 0) {
+      const scrollLeft = todayOffset * DAY_WIDTH - containerRef.current.clientWidth / 2 + 240
+      containerRef.current.scrollLeft = Math.max(0, scrollLeft)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** ドラッグ中のタスクの表示位置を計算 */
   const getDisplayDates = useCallback(
@@ -225,31 +278,47 @@ export function GanttView() {
         {/* ヘッダー */}
         <div className="sticky top-0 z-10 flex border-b border-border bg-background">
           {/* タスク名カラム */}
-          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 py-2">
+          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 flex items-end pb-1">
             <div className="text-xs font-medium text-muted-foreground">タスク名</div>
           </div>
           {/* 日付ヘッダー */}
-          <div className="flex">
-            {days.map((day, i) => {
-              const isToday = i === todayOffset
-              const weekend = isWeekend(day)
-              return (
+          <div className="flex flex-col">
+            {/* 月ヘッダー行 */}
+            <div className="flex" style={{ height: MONTH_HEADER_HEIGHT }}>
+              {monthHeaders.map((mh, i) => (
                 <div
                   key={i}
-                  className={`flex flex-col items-center justify-center border-r border-border text-xs ${
-                    isToday
-                      ? 'bg-primary/10 font-bold text-primary'
-                      : weekend
-                        ? 'bg-muted/50 text-muted-foreground'
-                        : 'text-muted-foreground'
-                  }`}
-                  style={{ width: DAY_WIDTH, height: HEADER_HEIGHT }}
+                  className="flex items-center justify-center border-r border-b border-border text-xs font-semibold text-foreground bg-muted/30"
+                  style={{ width: mh.span * DAY_WIDTH }}
                 >
-                  <span>{format(day, 'M/d')}</span>
-                  <span className="text-[10px]">{format(day, 'E', { locale: ja })}</span>
+                  {mh.label}
                 </div>
-              )
-            })}
+              ))}
+            </div>
+            {/* 日付行 */}
+            <div className="flex">
+              {days.map((day, i) => {
+                const isToday = i === todayOffset
+                const weekend = isWeekend(day)
+                const isFirstOfMonth = day.getDate() === 1
+                return (
+                  <div
+                    key={i}
+                    className={`flex flex-col items-center justify-center border-r border-border text-xs ${
+                      isToday
+                        ? 'bg-primary/10 font-bold text-primary'
+                        : weekend
+                          ? 'bg-muted/50 text-muted-foreground'
+                          : 'text-muted-foreground'
+                    } ${isFirstOfMonth ? 'border-l border-l-border' : ''}`}
+                    style={{ width: DAY_WIDTH, height: HEADER_HEIGHT - MONTH_HEADER_HEIGHT }}
+                  >
+                    <span>{format(day, 'd')}</span>
+                    <span className="text-[10px]">{format(day, 'E', { locale: ja })}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 
