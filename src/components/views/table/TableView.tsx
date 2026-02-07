@@ -78,7 +78,6 @@ export function TableView() {
                   </div>
                   {/* リサイズハンドル */}
                   <ColumnResizeHandle
-                    fieldId={field.id}
                     currentWidth={field.width ?? 150}
                     onResize={(w) => updateField(field.id, { width: w })}
                   />
@@ -534,11 +533,9 @@ function applySorts(
 
 /** カラムリサイズハンドル */
 function ColumnResizeHandle({
-  fieldId,
   currentWidth,
   onResize,
 }: {
-  fieldId: string
   currentWidth: number
   onResize: (width: number) => void
 }) {
