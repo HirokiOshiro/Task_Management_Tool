@@ -178,7 +178,7 @@ export function createDefaultFields(): FieldDefinition[] {
       required: false,
       order: 8,
       width: 130,
-      visible: false,
+      visible: true,
       isSystem: true,
     },
     {
