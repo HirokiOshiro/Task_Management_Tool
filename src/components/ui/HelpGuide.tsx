@@ -298,7 +298,7 @@ export function HelpGuide({ open, onClose }: { open: boolean; onClose: () => voi
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
                   className={cn(
-                    'flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors sm:text-sm',
+                    'flex items-start gap-2 rounded-md px-3 py-2 text-xs text-left transition-colors sm:text-sm',
                     activeSection === section.id
                       ? 'bg-primary/10 text-primary font-medium'
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
