@@ -14,6 +14,13 @@ import {
   MousePointerClick,
   ChevronRight,
   StickyNote,
+  ShieldCheck,
+  AlertTriangle,
+  FileJson,
+  FileSpreadsheet,
+  Database,
+  HardDrive,
+  Info,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -159,22 +166,186 @@ const sections: Section[] = [
     title: 'データの保存と読み込み',
     icon: <FileDown size={16} />,
     content: (
-      <div className="space-y-3 text-sm text-foreground/80">
-        <p>サイドバーの「データソース」セクションからファイルの操作ができます。</p>
-        <ul className="space-y-2 pl-1">
-          <li className="flex items-start gap-2">
-            <FileUp size={14} className="mt-0.5 flex-shrink-0 text-primary" />
-            <span><span className="font-medium">ファイルを開く：</span>JSON または Excel（.xlsx）ファイルを読み込み</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <FileDown size={14} className="mt-0.5 flex-shrink-0 text-primary" />
-            <span><span className="font-medium">保存：</span>現在のデータをJSONファイルとして保存</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <ChevronRight size={14} className="mt-0.5 flex-shrink-0 text-primary" />
-            <span><span className="font-medium">デモデータ：</span>サンプルデータを読み込んで機能を試すことができます</span>
-          </li>
-        </ul>
+      <div className="space-y-4 text-sm text-foreground/80">
+        <p>サイドバーの「データ」セクションからファイルの操作ができます。</p>
+
+        {/* データの保存先 */}
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <div className="flex items-center gap-2 font-medium text-foreground">
+            <HardDrive size={14} className="text-primary" />
+            <span>データの保存先について</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            このツールはブラウザ上で動作するアプリです。データはブラウザのメモリ上にのみ保持され、
+            <span className="font-medium text-amber-600 dark:text-amber-400">ページを閉じたりリロードすると内容は失われます。</span>
+            必ずファイルに保存してください。
+          </p>
+        </div>
+
+        {/* 操作一覧 */}
+        <div className="space-y-2.5">
+          <div className="font-medium text-foreground text-xs">操作一覧</div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+            <FileUp size={15} className="mt-0.5 flex-shrink-0 text-blue-500" />
+            <div>
+              <div className="font-medium text-foreground text-xs">ファイルを開く</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                JSON または Excel（.xlsx）ファイルを選択して読み込みます。
+                以前保存したファイルを開いて作業を再開できます。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+            <FileJson size={15} className="mt-0.5 flex-shrink-0 text-green-500" />
+            <div>
+              <div className="font-medium text-foreground text-xs">JSONで保存</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                すべてのタスク・フィールド設定・ビュー設定をJSON形式でダウンロードします。
+                <span className="font-medium text-foreground">推奨の保存形式</span>です。フィールド構成やメモなど全ての情報が保存されます。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+            <FileSpreadsheet size={15} className="mt-0.5 flex-shrink-0 text-emerald-500" />
+            <div>
+              <div className="font-medium text-foreground text-xs">Excelで保存</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                タスクデータをExcelファイル（.xlsx）としてダウンロードします。
+                ExcelやGoogleスプレッドシートでの開覧・共有に便利です。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+            <Database size={15} className="mt-0.5 flex-shrink-0 text-violet-500" />
+            <div>
+              <div className="font-medium text-foreground text-xs">デモデータ</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                サンプルのタスクデータを読み込みます。初めて使う方はまずこちらを読み込んで、
+                操作を試してみてください。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 保存状態の見方 */}
+        <div className="rounded-lg bg-primary/5 p-3 text-xs space-y-1">
+          <p className="font-medium text-primary">💡 保存状態の確認方法</p>
+          <p>
+            画面下部のステータスバーに接続状態が表示されます。
+            サイドバーの保存ボタン横に<span className="inline-flex items-center mx-0.5"><span className="h-2 w-2 rounded-full bg-amber-500 inline-block" /></span>が表示されている場合は未保存の変更があります。
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'safety',
+    title: '安全性について',
+    icon: <ShieldCheck size={16} />,
+    content: (
+      <div className="space-y-4 text-sm text-foreground/80">
+        <p>このツールはプライバシーとセキュリティを重視して設計されています。</p>
+
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-2.5 rounded-md bg-green-500/10 p-2.5">
+            <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">完全ローカル動作</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                すべてのデータはお使いのブラウザ内でのみ処理されます。
+                外部サーバーへのデータ送信は一切行われません。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-green-500/10 p-2.5">
+            <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">アカウント不要</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                ユーザー登録やログインは不要です。個人情報の入力も必要ありません。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-green-500/10 p-2.5">
+            <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">ファイルアクセス</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                ファイルの読み書きはブラウザ標準のAPIを使用し、ユーザーが明示的に選択したファイルのみにアクセスします。
+                勝手にファイルを読み取ったり、他のファイルにアクセスすることはありません。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-green-500/10 p-2.5">
+            <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">Cookie・トラッキングなし</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Cookieやトラッキングは使用していません。テーマ設定のみローカルストレージに保存されます。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'caution',
+    title: '利用上の注意点',
+    icon: <AlertTriangle size={16} />,
+    content: (
+      <div className="space-y-4 text-sm text-foreground/80">
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-2.5">
+            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">こまめに保存してください</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                データはブラウザのメモリ上にのみ存在します。ページを閉じる・リロードする・ブラウザがクラッシュすると未保存の変更は失われます。
+                作業中はこまめにJSONまたはExcelで保存してください。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-2.5">
+            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">自動保存はありません</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                現在のバージョンでは自動保存機能はありません。サイドバーの「JSONで保存」または「Excelで保存」を手動で実行してください。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-2.5">
+            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+            <div>
+              <div className="font-medium text-foreground text-xs">デモデータの上書きに注意</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                「デモデータ」をクリックすると現在のデータがサンプルデータに置き換わります。
+                大切なデータがある場合は先に保存してください。
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+            <Info size={15} className="mt-0.5 flex-shrink-0 text-blue-500" />
+            <div>
+              <div className="font-medium text-foreground text-xs">対応ブラウザ</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                最新版のChrome・Edge・Safari・Firefoxを推奨します。
+                古いブラウザでは一部の機能が正常に動作しない場合があります。
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     ),
   },
@@ -193,7 +364,7 @@ export function HelpGuide({ open, onClose }: { open: boolean; onClose: () => voi
       <div className="fixed inset-0 z-[60] bg-black/30" onClick={onClose} />
       {/* モーダル */}
       <div className="fixed inset-4 z-[61] flex items-center justify-center sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-2xl">
-        <div className="flex h-[480px] w-full flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl sm:flex-row">
+        <div className="flex h-[560px] w-full flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl sm:flex-row">
           {/* サイドナビ */}
           <div className="flex flex-shrink-0 flex-col border-b border-border bg-muted/30 sm:w-48 sm:border-b-0 sm:border-r">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
