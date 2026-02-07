@@ -7,7 +7,7 @@ import { X, Plus, Filter, ListFilter, List } from 'lucide-react'
 import { generateId } from '@/lib/id'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { useI18n } from '@/i18n'
+import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 function getOperatorsForType(type: FieldDefinition['type']): FilterOperator[] {
   switch (type) {
@@ -157,7 +157,7 @@ export function FilterBar() {
               className="bg-transparent outline-none text-xs"
             >
               {fields.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+                <option key={f.id} value={f.id}>{translateFieldName(t, f.id, f.name)}</option>
               ))}
             </select>
 
@@ -182,7 +182,7 @@ export function FilterBar() {
                 >
                   <option value="">-</option>
                   {field.options?.map((opt) => (
-                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    <option key={opt.id} value={opt.id}>{translateOptionLabel(t, field.id, opt.id, opt.label)}</option>
                   ))}
                 </select>
               ) : field.type === 'checkbox' ? (
@@ -235,7 +235,7 @@ export function FilterBar() {
           >
             <option value="">{t.filter.selectField}</option>
             {fields.map((f) => (
-              <option key={f.id} value={f.id}>{f.name}</option>
+              <option key={f.id} value={f.id}>{translateFieldName(t, f.id, f.name)}</option>
             ))}
           </select>
           <button

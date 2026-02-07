@@ -5,7 +5,7 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { useI18n } from '@/i18n'
+import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -117,11 +117,12 @@ function DetailField({
   onUpdate: (taskId: string, fieldId: string, value: unknown) => void
 }) {
   const [editing, setEditing] = useState(false)
+  const { t } = useI18n()
 
   return (
     <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
       <label className="text-xs font-medium text-muted-foreground pt-1.5">
-        {field.name}
+        {translateFieldName(t, field.id, field.name)}
       </label>
       <div>
         {editing ? (
@@ -172,7 +173,7 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
           className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
           style={{ backgroundColor: option.color + '20', color: option.color }}
         >
-          {option.label}
+          {translateOptionLabel(t, field.id, option.id, option.label)}
         </span>
       )
     }
@@ -229,6 +230,7 @@ function DetailEditor({
   onCancel: () => void
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -312,7 +314,7 @@ function DetailEditor({
           <option value="">-</option>
           {field.options?.map((opt) => (
             <option key={opt.id} value={opt.id}>
-              {opt.label}
+              {translateOptionLabel(t, field.id, opt.id, opt.label)}
             </option>
           ))}
         </select>

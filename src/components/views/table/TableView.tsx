@@ -7,7 +7,7 @@ import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useI18n } from '@/i18n'
+import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function TableView() {
   const { addTask, deleteTask, updateTask, updateField } = useTaskStore()
@@ -68,7 +68,7 @@ export function TableView() {
                   onClick={() => handleSort(field.id)}
                 >
                   <div className="flex items-center gap-1">
-                    <span className="truncate">{field.name}</span>
+                    <span className="truncate">{translateFieldName(t, field.id, field.name)}</span>
                     {sort ? (
                       sort.direction === 'asc' ? (
                         <ArrowUp size={14} className="text-primary flex-shrink-0" />
@@ -222,6 +222,7 @@ function CellRenderer({
   value: unknown
   field: FieldDefinition
 }) {
+  const { t } = useI18n()
   if (value == null || value === '') {
     return <span className="text-muted-foreground/40">-</span>
   }
@@ -235,7 +236,7 @@ function CellRenderer({
           className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
           style={{ backgroundColor: option.color + '20', color: option.color }}
         >
-          {option.label}
+          {translateOptionLabel(t, field.id, option.id, option.label)}
         </span>
       )
     }
@@ -320,6 +321,7 @@ function CellEditor({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     // フォーカスを当てる
@@ -413,7 +415,7 @@ function CellEditor({
           <option value="">-</option>
           {field.options?.map((opt) => (
             <option key={opt.id} value={opt.id}>
-              {opt.label}
+              {translateOptionLabel(t, field.id, opt.id, opt.label)}
             </option>
           ))}
         </select>

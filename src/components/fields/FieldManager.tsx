@@ -18,7 +18,7 @@ import { useViewStore } from '@/stores/view-store'
 import type { FieldType, FieldDefinition } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useI18n } from '@/i18n'
+import { useI18n, translateFieldName } from '@/i18n'
 
 export function FieldManager() {
   const { fields, addField, updateField, deleteField, reorderFields } = useTaskStore()
@@ -177,7 +177,7 @@ function SortableFieldItem({
         <GripVertical size={12} className="text-muted-foreground/30 flex-shrink-0" />
       </div>
       <span className={cn('flex-1 truncate', !field.visible && 'text-muted-foreground/50')}>
-        {field.name}
+        {translateFieldName(t, field.id, field.name)}
       </span>
       <span className="text-[10px] text-muted-foreground">
         {FIELD_TYPE_LABELS[field.type]}

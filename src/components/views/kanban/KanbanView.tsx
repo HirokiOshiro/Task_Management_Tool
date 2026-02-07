@@ -21,7 +21,7 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { Task } from '@/types/task'
 import { cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
-import { useI18n } from '@/i18n'
+import { useI18n, translateOptionLabel } from '@/i18n'
 
 export function KanbanView() {
   const { updateTask, addTask } = useTaskStore()
@@ -142,6 +142,7 @@ export function KanbanView() {
           <KanbanColumn
             key={column.id}
             column={column}
+            groupFieldId={groupFieldId}
             fields={fields}
             onCardClick={openDetailPanel}
             onAddTask={() => handleAddTask(column.id)}
@@ -161,11 +162,13 @@ export function KanbanView() {
 /** カラムコンポーネント */
 function KanbanColumn({
   column,
+  groupFieldId,
   fields,
   onCardClick,
   onAddTask,
 }: {
   column: { id: string; label: string; color: string; tasks: Task[] }
+  groupFieldId: string
   fields: ReturnType<typeof useTaskStore.getState>['fields']
   onCardClick: (taskId: string) => void
   onAddTask: () => void
@@ -180,7 +183,7 @@ function KanbanColumn({
           className="h-2.5 w-2.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: column.color }}
         />
-        <span className="text-sm font-medium truncate">{column.label}</span>
+        <span className="text-sm font-medium truncate">{translateOptionLabel(t, groupFieldId, column.id, column.label)}</span>
         <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums">
           {column.tasks.length}
         </span>
@@ -314,7 +317,7 @@ function KanbanCardContent({
             className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
             style={{ backgroundColor: priorityOption.color + '20', color: priorityOption.color }}
           >
-            {priorityOption.label}
+            {translateOptionLabel(t, SYSTEM_FIELD_IDS.PRIORITY, priorityOption.id, priorityOption.label)}
           </span>
         )}
       </div>

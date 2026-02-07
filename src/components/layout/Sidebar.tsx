@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
 import { useViewStore } from '@/stores/view-store'
-import { useI18n } from '@/i18n'
+import { useI18n, translateViewName } from '@/i18n'
 import { FieldManager } from '@/components/fields/FieldManager'
 import { DataSourceSelector } from '@/components/data-source/DataSourceSelector'
 import type { ViewType } from '@/types/view'
@@ -163,7 +163,7 @@ export function Sidebar() {
                       autoFocus
                     />
                   ) : (
-                    <span className="truncate">{view.name}</span>
+                    <span className="truncate">{translateViewName(t, view.name)}</span>
                   )}
                 </button>
 
