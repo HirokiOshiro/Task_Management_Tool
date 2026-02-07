@@ -1,8 +1,9 @@
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
 import type { FieldDefinition } from '@/types/task'
+import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2 } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
 export function TaskDetailPanel() {
@@ -10,7 +11,19 @@ export function TaskDetailPanel() {
   const { tasks, fields, updateTask, deleteTask } = useTaskStore()
 
   const task = tasks.find((t) => t.id === selectedTaskId)
-  const sortedFields = [...fields].sort((a, b) => a.order - b.order)
+
+  // 開始日を期限の直前に配置する
+  const sortedFields = useMemo(() => {
+    const base = [...fields].sort((a, b) => a.order - b.order)
+    const startIdx = base.findIndex((f) => f.id === SYSTEM_FIELD_IDS.START_DATE)
+    const dueIdx = base.findIndex((f) => f.id === SYSTEM_FIELD_IDS.DUE_DATE)
+    if (startIdx !== -1 && dueIdx !== -1 && startIdx > dueIdx) {
+      const [startField] = base.splice(startIdx, 1)
+      const newDueIdx = base.findIndex((f) => f.id === SYSTEM_FIELD_IDS.DUE_DATE)
+      base.splice(newDueIdx, 0, startField)
+    }
+    return base
+  }, [fields])
 
   if (!detailPanelOpen || !task) return null
 
