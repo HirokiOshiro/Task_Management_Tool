@@ -2,9 +2,11 @@ import { useViewStore } from '@/stores/view-store'
 import { useTaskStore } from '@/stores/task-store'
 import type { FilterRule, FilterOperator } from '@/types/view'
 import type { FieldDefinition } from '@/types/task'
-import { X, Plus, Filter } from 'lucide-react'
+import { SYSTEM_FIELD_IDS } from '@/types/task'
+import { X, Plus, Filter, ListFilter, List } from 'lucide-react'
 import { generateId } from '@/lib/id'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 const OPERATOR_LABELS: Record<FilterOperator, string> = {
   equals: '等しい',
@@ -75,20 +77,78 @@ export function FilterBar() {
     setFilters(filters.filter((f) => f.id !== filterId))
   }
 
+  // 「完了以外」フィルターが現在設定されているか判定
+  const hasHideDoneFilter = filters.some(
+    (f) => f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done'
+  )
+
+  const setHideDone = () => {
+    // 既存のステータス系フィルタを除去して「完了以外」を設定
+    const otherFilters = filters.filter(
+      (f) => !(f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done')
+    )
+    setFilters([
+      ...otherFilters,
+      { id: 'default-hide-done', fieldId: SYSTEM_FIELD_IDS.STATUS, operator: 'not_equals' as FilterOperator, value: 'done' },
+    ])
+  }
+
+  const setShowAll = () => {
+    // 「完了以外」フィルタのみ除去（他のフィルタは維持）
+    setFilters(filters.filter(
+      (f) => !(f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done')
+    ))
+  }
+
+  const quickFilterButtons = (
+    <div className="flex items-center rounded-md border border-border bg-background text-xs">
+      <button
+        onClick={setHideDone}
+        className={cn(
+          'flex items-center gap-1 rounded-l-md px-2 py-1 transition-colors',
+          hasHideDoneFilter
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
+        title="完了タスクを非表示"
+      >
+        <ListFilter size={13} />
+        完了以外
+      </button>
+      <button
+        onClick={setShowAll}
+        className={cn(
+          'flex items-center gap-1 rounded-r-md px-2 py-1 transition-colors border-l border-border',
+          !hasHideDoneFilter
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
+        title="全タスクを表示"
+      >
+        <List size={13} />
+        全て
+      </button>
+    </div>
+  )
+
   if (filters.length === 0 && !showAdd) {
     return (
-      <button
-        onClick={() => setShowAdd(true)}
-        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-      >
-        <Filter size={14} />
-        フィルタ
-      </button>
+      <div className="flex items-center gap-2">
+        {quickFilterButtons}
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Filter size={14} />
+          フィルタ
+        </button>
+      </div>
     )
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {quickFilterButtons}
       <Filter size={14} className="text-muted-foreground" />
       {filters.map((filter) => {
         const field = fields.find((f) => f.id === filter.fieldId)

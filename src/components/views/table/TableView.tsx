@@ -17,7 +17,11 @@ export function TableView() {
 
   const visibleFields = fields
     .filter((f) => activeView.visibleFieldIds.includes(f.id))
-    .sort((a, b) => a.order - b.order)
+    .sort((a, b) => {
+      const idxA = activeView.visibleFieldIds.indexOf(a.id)
+      const idxB = activeView.visibleFieldIds.indexOf(b.id)
+      return idxA - idxB
+    })
 
   // フィルタ適用済み → ソート適用
   const sortedTasks = applySorts(filteredTasks, activeView.sorts, fields)
