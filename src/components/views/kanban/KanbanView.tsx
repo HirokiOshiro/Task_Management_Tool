@@ -118,12 +118,13 @@ export function KanbanView() {
   const handleAddTask = useCallback(
     (columnId: string) => {
       const value = columnId === '__unassigned__' ? undefined : columnId
-      addTask({
+      const task = addTask({
         [SYSTEM_FIELD_IDS.TITLE]: '',
         [groupFieldId]: value,
       })
+      openDetailPanel(task.id)
     },
-    [addTask, groupFieldId]
+    [addTask, groupFieldId, openDetailPanel]
   )
 
   return (

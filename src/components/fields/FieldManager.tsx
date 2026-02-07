@@ -14,6 +14,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useTaskStore } from '@/stores/task-store'
+import { useViewStore } from '@/stores/view-store'
 import type { FieldType, FieldDefinition } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -32,7 +33,25 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 
 export function FieldManager() {
   const { fields, addField, updateField, deleteField, reorderFields } = useTaskStore()
+  const { views, updateView } = useViewStore()
   const [showAddForm, setShowAddForm] = useState(false)
+
+  /** フィールドの表示/非表示を切り替え、全ビューの visibleFieldIds にも反映する */
+  const toggleVisibility = useCallback(
+    (field: FieldDefinition) => {
+      const newVisible = !field.visible
+      updateField(field.id, { visible: newVisible })
+      for (const view of views) {
+        const ids = view.visibleFieldIds
+        if (newVisible && !ids.includes(field.id)) {
+          updateView(view.id, { visibleFieldIds: [...ids, field.id] })
+        } else if (!newVisible && ids.includes(field.id)) {
+          updateView(view.id, { visibleFieldIds: ids.filter((id) => id !== field.id) })
+        }
+      }
+    },
+    [updateField, views, updateView]
+  )
 
   const sortedFields = [...fields].sort((a, b) => a.order - b.order)
   const fieldIds = sortedFields.map((f) => f.id)
@@ -85,7 +104,7 @@ export function FieldManager() {
               <SortableFieldItem
                 key={field.id}
                 field={field}
-                onToggleVisibility={() => updateField(field.id, { visible: !field.visible })}
+                onToggleVisibility={() => toggleVisibility(field)}
                 onDelete={() => deleteField(field.id)}
               />
             ))}
@@ -105,6 +124,17 @@ export function FieldManager() {
               isSystem: false,
               width: 150,
             })
+            // 新しいフィールドを全ビューの visibleFieldIds に追加
+            const newField = useTaskStore.getState().fields.at(-1)
+            if (newField) {
+              for (const view of useViewStore.getState().views) {
+                if (!view.visibleFieldIds.includes(newField.id)) {
+                  updateView(view.id, {
+                    visibleFieldIds: [...view.visibleFieldIds, newField.id],
+                  })
+                }
+              }
+            }
             setShowAddForm(false)
           }}
           onCancel={() => setShowAddForm(false)}

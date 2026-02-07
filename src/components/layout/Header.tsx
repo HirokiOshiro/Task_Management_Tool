@@ -28,6 +28,7 @@ export function Header() {
   const { sidebarOpen, setSidebarOpen } = useUIStore()
   const { views, activeViewId, setActiveView } = useViewStore()
   const addTask = useTaskStore((s) => s.addTask)
+  const openDetailPanel = useUIStore((s) => s.openDetailPanel)
   const [helpOpen, setHelpOpen] = useState(false)
 
   return (
@@ -82,7 +83,10 @@ export function Header() {
             <HelpCircle size={18} />
           </button>
           <button
-            onClick={() => addTask({ [SYSTEM_FIELD_IDS.TITLE]: '', [SYSTEM_FIELD_IDS.STATUS]: 'not_started' })}
+            onClick={() => {
+              const task = addTask({ [SYSTEM_FIELD_IDS.TITLE]: '', [SYSTEM_FIELD_IDS.STATUS]: 'not_started' })
+              openDetailPanel(task.id)
+            }}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus size={16} />
