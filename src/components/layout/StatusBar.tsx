@@ -1,6 +1,6 @@
 import { useConnectionStore } from '@/stores/connection-store'
 import { useTaskStore } from '@/stores/task-store'
-import { Cloud, CloudOff, HardDrive, Loader2 } from 'lucide-react'
+import { Cloud, CloudOff, HardDrive, Loader2, Save } from 'lucide-react'
 
 export function StatusBar() {
   const { status, connection, lastSaved } = useConnectionStore()
@@ -29,6 +29,12 @@ export function StatusBar() {
           <HardDrive size={12} />
           <span>{connection?.type === 'local' ? 'ローカル' : connection?.type === 'sharepoint' ? 'SharePoint' : 'メモリ'}</span>
         </div>
+
+        {/* 自動保存 */}
+        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+          <Save size={11} />
+          <span>自動保存 ON</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -36,9 +42,9 @@ export function StatusBar() {
         <span>{tasks.length} タスク</span>
 
         {/* 保存状態 */}
-        {isDirty && <span className="text-amber-500">未保存の変更あり</span>}
+        {isDirty && <span className="text-amber-500">ファイル未エクスポート</span>}
         {lastSaved && !isDirty && (
-          <span>最終保存: {formatTime(lastSaved)}</span>
+          <span>最終エクスポート: {formatTime(lastSaved)}</span>
         )}
       </div>
     </footer>

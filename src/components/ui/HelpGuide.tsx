@@ -176,9 +176,10 @@ const sections: Section[] = [
             <span>データの保存先について</span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            このツールはブラウザ上で動作するアプリです。データはブラウザのメモリ上にのみ保持され、
-            <span className="font-medium text-amber-600 dark:text-amber-400">ページを閉じたりリロードすると内容は失われます。</span>
-            必ずファイルに保存してください。
+            このツールはブラウザ上で動作するアプリです。タスクデータは
+            <span className="font-medium text-green-600 dark:text-green-400">ブラウザのローカルストレージに自動保存</span>されるため、
+            ページを閉じても次回アクセス時にデータが復元されます。
+            ただしブラウザのデータ削除を行うと消えるため、大切なデータはファイルにもエクスポートしてください。
           </p>
         </div>
 
@@ -288,7 +289,7 @@ const sections: Section[] = [
             <div>
               <div className="font-medium text-foreground text-xs">Cookie・トラッキングなし</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Cookieやトラッキングは使用していません。テーマ設定のみローカルストレージに保存されます。
+                Cookieやトラッキングは使用していません。ローカルストレージはテーマ設定とタスクデータの自動保存のみに使用されます。
               </div>
             </div>
           </div>
@@ -303,13 +304,13 @@ const sections: Section[] = [
     content: (
       <div className="space-y-4 text-sm text-foreground/80">
         <div className="space-y-2.5">
-          <div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-2.5">
-            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+          <div className="flex items-start gap-2.5 rounded-md bg-green-500/10 p-2.5">
+            <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
             <div>
-              <div className="font-medium text-foreground text-xs">こまめに保存してください</div>
+              <div className="font-medium text-foreground text-xs">ブラウザ内自動保存</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                データはブラウザのメモリ上にのみ存在します。ページを閉じる・リロードする・ブラウザがクラッシュすると未保存の変更は失われます。
-                作業中はこまめにJSONまたはExcelで保存してください。
+                タスクデータはブラウザのローカルストレージに自動保存されます。
+                ページを閉じても、次回アクセス時にデータが自動的に復元されます。
               </div>
             </div>
           </div>
@@ -317,9 +318,10 @@ const sections: Section[] = [
           <div className="flex items-start gap-2.5 rounded-md bg-amber-500/10 p-2.5">
             <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
             <div>
-              <div className="font-medium text-foreground text-xs">自動保存はありません</div>
+              <div className="font-medium text-foreground text-xs">ファイルへのバックアップを推奨</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                現在のバージョンでは自動保存機能はありません。サイドバーの「JSONで保存」または「Excelで保存」を手動で実行してください。
+                自動保存はブラウザ内のみです。ブラウザのデータ削除やキャッシュクリアを行うとデータが消えます。
+                重要なデータは定期的に「JSONで保存」や「Excelで保存」でファイルにエクスポートしてください。
               </div>
             </div>
           </div>

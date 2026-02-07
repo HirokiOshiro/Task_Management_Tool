@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { persist } from 'zustand/middleware'
 import type { Task, FieldDefinition, TaskDataSet, TaskFieldValues } from '@/types/task'
 import type { ViewConfig } from '@/types/view'
 import { createDefaultFields } from '@/types/task'
@@ -29,10 +30,24 @@ interface TaskState {
   loadDataSet: (dataSet: TaskDataSet) => void
   getDataSet: () => TaskDataSet
   markClean: () => void
+  clearStorage: () => void
+}
+
+/** localStorageに保存済みデータがあるか確認 */
+export function hasPersistedData(): boolean {
+  try {
+    const raw = localStorage.getItem('task-storage')
+    if (!raw) return false
+    const parsed = JSON.parse(raw)
+    return parsed?.state?.tasks?.length > 0
+  } catch {
+    return false
+  }
 }
 
 export const useTaskStore = create<TaskState>()(
-  immer((set, get) => ({
+  persist(
+    immer((set, get) => ({
     tasks: [],
     fields: createDefaultFields(),
     viewConfigs: [],
@@ -168,5 +183,19 @@ export const useTaskStore = create<TaskState>()(
         state.isDirty = false
       })
     },
-  }))
+
+    clearStorage: () => {
+      localStorage.removeItem('task-storage')
+    },
+  })),
+  {
+    name: 'task-storage',
+    partialize: (state) => ({
+      tasks: state.tasks,
+      fields: state.fields,
+      viewConfigs: state.viewConfigs,
+      isLoaded: state.isLoaded,
+    }),
+  }
+  )
 )
