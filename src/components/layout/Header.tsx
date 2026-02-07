@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Menu,
   Plus,
@@ -5,12 +6,14 @@ import {
   LayoutGrid,
   GanttChart,
   CalendarDays,
+  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
 import { useViewStore } from '@/stores/view-store'
 import { useTaskStore } from '@/stores/task-store'
 import { FilterBar } from '@/components/filter-sort/FilterBar'
+import { HelpGuide } from '@/components/ui/HelpGuide'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { ViewType } from '@/types/view'
 
@@ -25,8 +28,11 @@ export function Header() {
   const { sidebarOpen, setSidebarOpen } = useUIStore()
   const { views, activeViewId, setActiveView } = useViewStore()
   const addTask = useTaskStore((s) => s.addTask)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   return (
+    <>
+    <HelpGuide open={helpOpen} onClose={() => setHelpOpen(false)} />
     <header className="border-b border-border bg-background">
       <div className="flex h-12 items-center px-4">
         {/* サイドバートグル */}
@@ -69,6 +75,13 @@ export function Header() {
         {/* アクションボタン */}
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setHelpOpen(true)}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            title="使い方ガイド"
+          >
+            <HelpCircle size={18} />
+          </button>
+          <button
             onClick={() => addTask({ [SYSTEM_FIELD_IDS.TITLE]: '', [SYSTEM_FIELD_IDS.STATUS]: 'not_started' })}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 transition-colors"
           >
@@ -83,5 +96,6 @@ export function Header() {
         <FilterBar />
       </div>
     </header>
+    </>
   )
 }

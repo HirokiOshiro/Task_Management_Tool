@@ -2,7 +2,7 @@ import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { X, Trash2 } from 'lucide-react'
+import { X, Trash2, StickyNote } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -60,10 +60,12 @@ export function TaskDetailPanel() {
           </div>
         </div>
 
-        {/* フィールド一覧 */}
+        {/* フィールド一覧 + メモ */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {sortedFields.map((field) => (
+            {sortedFields
+              .filter((f) => f.id !== SYSTEM_FIELD_IDS.NOTES)
+              .map((field) => (
               <DetailField
                 key={field.id}
                 taskId={task.id}
@@ -73,6 +75,13 @@ export function TaskDetailPanel() {
               />
             ))}
           </div>
+
+          {/* メモセクション */}
+          <MemoSection
+            taskId={task.id}
+            value={task.fieldValues[SYSTEM_FIELD_IDS.NOTES] as string | undefined}
+            onUpdate={updateTask}
+          />
         </div>
 
         {/* フッター */}
@@ -385,6 +394,98 @@ function DetailMultiSelectEditor({
                 {o.label}
               </button>
             ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** メモセクション */
+function MemoSection({
+  taskId,
+  value,
+  onUpdate,
+}: {
+  taskId: string
+  value: string | undefined
+  onUpdate: (taskId: string, fieldId: string, value: unknown) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value ?? '')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // value が外部から変わったら draft をリセット
+  useEffect(() => {
+    if (!editing) {
+      setDraft(value ?? '')
+    }
+  }, [value, editing])
+
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      textareaRef.current.focus()
+      // カーソルを末尾に
+      const len = textareaRef.current.value.length
+      textareaRef.current.setSelectionRange(len, len)
+    }
+  }, [editing])
+
+  const save = () => {
+    const trimmed = draft.trim()
+    onUpdate(taskId, SYSTEM_FIELD_IDS.NOTES, trimmed || undefined)
+    setEditing(false)
+  }
+
+  return (
+    <div className="mt-6 border-t border-border pt-4">
+      <div className="flex items-center gap-2 mb-2">
+        <StickyNote size={14} className="text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">メモ</span>
+      </div>
+      {editing ? (
+        <div>
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={5}
+            className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y"
+            placeholder="メモを入力..."
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setDraft(value ?? '')
+                setEditing(false)
+              }
+            }}
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <button
+              onClick={() => {
+                setDraft(value ?? '')
+                setEditing(false)
+              }}
+              className="rounded px-3 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={save}
+              className="rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="min-h-[60px] cursor-pointer rounded border border-transparent px-3 py-2 text-sm hover:border-border hover:bg-accent/30 transition-colors whitespace-pre-wrap"
+          onClick={() => setEditing(true)}
+        >
+          {value ? (
+            <span className="text-foreground">{value}</span>
+          ) : (
+            <span className="text-muted-foreground/40">クリックしてメモを追加...</span>
+          )}
         </div>
       )}
     </div>

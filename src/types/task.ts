@@ -43,6 +43,7 @@ export const SYSTEM_FIELD_IDS = {
   PROGRESS: 'progress',
   START_DATE: 'start_date',
   DEPENDENCIES: 'dependencies',
+  NOTES: 'notes',
 } as const
 
 /** タスクのフィールド値 */
@@ -189,6 +190,16 @@ export function createDefaultFields(): FieldDefinition[] {
       width: 150,
       visible: false,
       options: [],
+      isSystem: true,
+    },
+    {
+      id: SYSTEM_FIELD_IDS.NOTES,
+      name: 'メモ',
+      type: 'text',
+      required: false,
+      order: 10,
+      width: 200,
+      visible: false,
       isSystem: true,
     },
   ]
