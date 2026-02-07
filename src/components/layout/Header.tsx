@@ -12,17 +12,11 @@ import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
 import { useViewStore } from '@/stores/view-store'
 import { useTaskStore } from '@/stores/task-store'
+import { useI18n } from '@/i18n'
 import { FilterBar } from '@/components/filter-sort/FilterBar'
 import { HelpGuide } from '@/components/ui/HelpGuide'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { ViewType } from '@/types/view'
-
-const viewTabs: { type: ViewType; label: string; icon: React.ReactNode }[] = [
-  { type: 'table', label: 'テーブル', icon: <Table2 size={16} /> },
-  { type: 'kanban', label: 'カンバン', icon: <LayoutGrid size={16} /> },
-  { type: 'gantt', label: 'ガント', icon: <GanttChart size={16} /> },
-  { type: 'calendar', label: 'カレンダー', icon: <CalendarDays size={16} /> },
-]
 
 export function Header() {
   const { sidebarOpen, setSidebarOpen } = useUIStore()
@@ -30,6 +24,14 @@ export function Header() {
   const addTask = useTaskStore((s) => s.addTask)
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
   const [helpOpen, setHelpOpen] = useState(false)
+  const { t, lang, toggleLang } = useI18n()
+
+  const viewTabs: { type: ViewType; label: string; icon: React.ReactNode }[] = [
+    { type: 'table', label: t.views.table, icon: <Table2 size={16} /> },
+    { type: 'kanban', label: t.views.kanban, icon: <LayoutGrid size={16} /> },
+    { type: 'gantt', label: t.views.gantt, icon: <GanttChart size={16} /> },
+    { type: 'calendar', label: t.views.calendar, icon: <CalendarDays size={16} /> },
+  ]
 
   return (
     <>
@@ -41,7 +43,7 @@ export function Header() {
           <button
             onClick={() => setSidebarOpen(true)}
             className="mr-3 rounded p-1 hover:bg-accent"
-            title="サイドバーを開く"
+            title={t.header.openSidebar}
           >
             <Menu size={18} />
           </button>
@@ -76,9 +78,16 @@ export function Header() {
         {/* アクションボタン */}
         <div className="flex items-center gap-2">
           <button
+            onClick={toggleLang}
+            className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            title={lang === 'ja' ? 'Switch to English' : '日本語に切り替え'}
+          >
+            {lang === 'ja' ? 'EN' : 'JA'}
+          </button>
+          <button
             onClick={() => setHelpOpen(true)}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            title="使い方ガイド"
+            title={t.header.helpGuide}
           >
             <HelpCircle size={18} />
           </button>
@@ -90,7 +99,7 @@ export function Header() {
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus size={16} />
-            <span className="hidden sm:inline">新規タスク</span>
+            <span className="hidden sm:inline">{t.common.newTask}</span>
           </button>
         </div>
       </div>

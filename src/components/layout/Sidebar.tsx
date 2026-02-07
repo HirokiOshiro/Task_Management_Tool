@@ -17,26 +17,28 @@ import {
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui-store'
 import { useViewStore } from '@/stores/view-store'
+import { useI18n } from '@/i18n'
 import { FieldManager } from '@/components/fields/FieldManager'
 import { DataSourceSelector } from '@/components/data-source/DataSourceSelector'
 import type { ViewType } from '@/types/view'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-
-const VIEW_TYPE_META: Record<ViewType, { label: string; icon: React.ReactNode }> = {
-  table: { label: 'テーブル', icon: <Table2 size={18} /> },
-  kanban: { label: 'カンバン', icon: <LayoutGrid size={18} /> },
-  gantt: { label: 'ガント', icon: <GanttChart size={18} /> },
-  calendar: { label: 'カレンダー', icon: <CalendarDays size={18} /> },
-}
 
 const VIEW_TYPES: ViewType[] = ['table', 'kanban', 'gantt', 'calendar']
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, theme, toggleTheme } = useUIStore()
   const { views, activeViewId, setActiveView, addView, deleteView, updateView } = useViewStore()
+  const { t } = useI18n()
   const [editingViewId, setEditingViewId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [showAddView, setShowAddView] = useState(false)
+
+  const VIEW_TYPE_META: Record<ViewType, { label: string; icon: React.ReactNode }> = {
+    table: { label: t.views.table, icon: <Table2 size={18} /> },
+    kanban: { label: t.views.kanban, icon: <LayoutGrid size={18} /> },
+    gantt: { label: t.views.gantt, icon: <GanttChart size={18} /> },
+    calendar: { label: t.views.calendar, icon: <CalendarDays size={18} /> },
+  }
 
   const startRename = (viewId: string, currentName: string) => {
     setEditingViewId(viewId)
@@ -53,7 +55,7 @@ export function Sidebar() {
   const handleAddView = (type: ViewType) => {
     const meta = VIEW_TYPE_META[type]
     const newView = addView({
-      name: `${meta.label} (新規)`,
+      name: `${meta.label} ${t.views.newViewSuffix}`,
       type,
       sorts: [],
       filters: [],
@@ -82,12 +84,12 @@ export function Sidebar() {
       <div className="flex h-12 items-center justify-between border-b border-sidebar-border px-4">
         <div className="flex items-center gap-2">
           <Database size={18} className="text-primary" />
-          <span className="text-sm font-semibold">タスク管理</span>
+          <span className="text-sm font-semibold">{t.sidebar.appTitle}</span>
         </div>
         <button
           onClick={toggleSidebar}
           className="rounded p-1 hover:bg-accent"
-          title="サイドバーを閉じる"
+          title={t.sidebar.closeSidebar}
         >
           <ChevronLeft size={16} />
         </button>
@@ -97,11 +99,11 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto">
         <div className="p-2">
           <div className="mb-1 flex items-center justify-between px-2">
-            <span className="text-xs font-medium text-muted-foreground">ビュー</span>
+            <span className="text-xs font-medium text-muted-foreground">{t.views.viewLabel}</span>
             <button
               onClick={() => setShowAddView(!showAddView)}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-              title="ビューを追加"
+              title={t.sidebar.addViewTitle}
             >
               <Plus size={14} />
             </button>
@@ -119,7 +121,7 @@ export function Sidebar() {
                     className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs hover:bg-accent"
                   >
                     {meta.icon}
-                    {meta.label}ビューを追加
+                    {meta.label} {t.views.addView}
                   </button>
                 )
               })}
@@ -172,14 +174,14 @@ export function Sidebar() {
                       <button
                         onClick={commitRename}
                         className="rounded p-0.5 text-green-500 hover:bg-accent"
-                        title="確定"
+                        title={t.sidebar.confirmTitle}
                       >
                         <Check size={12} />
                       </button>
                       <button
                         onClick={() => setEditingViewId(null)}
                         className="rounded p-0.5 text-muted-foreground hover:bg-accent"
-                        title="キャンセル"
+                        title={t.sidebar.cancelTitle}
                       >
                         <X size={12} />
                       </button>
@@ -192,7 +194,7 @@ export function Sidebar() {
                           startRename(view.id, view.name)
                         }}
                         className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-                        title="名前を変更"
+                        title={t.sidebar.renameTitle}
                       >
                         <Pencil size={12} />
                       </button>
@@ -203,7 +205,7 @@ export function Sidebar() {
                             deleteView(view.id)
                           }}
                           className="rounded p-0.5 text-muted-foreground hover:text-destructive"
-                          title="ビューを削除"
+                          title={t.sidebar.deleteViewTitle}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -234,7 +236,7 @@ export function Sidebar() {
           className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50"
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          {theme === 'light' ? 'ダークモード' : 'ライトモード'}
+          {theme === 'light' ? t.sidebar.darkMode : t.sidebar.lightMode}
         </button>
       </div>
     </aside>

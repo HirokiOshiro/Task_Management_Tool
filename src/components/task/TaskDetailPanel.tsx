@@ -5,10 +5,11 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/i18n'
 
 export function TaskDetailPanel() {
-  const { detailPanelOpen, selectedTaskId, closeDetailPanel } = useUIStore()
-  const { tasks, fields, updateTask, deleteTask } = useTaskStore()
+  const { detailPanelOpen, selectedTaskId } = useUIStore()
+  const { tasks, fields } = useTaskStore()
 
   const task = tasks.find((t) => t.id === selectedTaskId)
 
@@ -27,6 +28,14 @@ export function TaskDetailPanel() {
 
   if (!detailPanelOpen || !task) return null
 
+  return <TaskDetailContent task={task} sortedFields={sortedFields} />
+}
+
+function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof useTaskStore.getState>['tasks'][number]; sortedFields: ReturnType<typeof useTaskStore.getState>['fields'] }) {
+  const { closeDetailPanel } = useUIStore()
+  const { updateTask, deleteTask } = useTaskStore()
+  const { t, lang } = useI18n()
+
   return (
     <>
       {/* オーバーレイ */}
@@ -38,7 +47,7 @@ export function TaskDetailPanel() {
       <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-border bg-background shadow-xl animate-in slide-in-from-right duration-200">
         {/* ヘッダー */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">タスク詳細</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">{t.taskDetail.title}</h2>
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
@@ -46,14 +55,14 @@ export function TaskDetailPanel() {
                 closeDetailPanel()
               }}
               className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              title="タスクを削除"
+              title={t.taskDetail.deleteTask}
             >
               <Trash2 size={16} />
             </button>
             <button
               onClick={closeDetailPanel}
               className="rounded p-1.5 text-muted-foreground hover:bg-accent"
-              title="閉じる"
+              title={t.common.close}
             >
               <X size={16} />
             </button>
@@ -86,9 +95,9 @@ export function TaskDetailPanel() {
 
         {/* フッター */}
         <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          作成: {new Date(task.createdAt).toLocaleString('ja-JP')}
+          {t.taskDetail.created} {new Date(task.createdAt).toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US')}
           {' / '}
-          更新: {new Date(task.updatedAt).toLocaleString('ja-JP')}
+          {t.taskDetail.updated} {new Date(task.updatedAt).toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US')}
         </div>
       </div>
     </>
@@ -149,8 +158,9 @@ function DetailField({
 
 /** 詳細パネルの値表示 */
 function DetailValue({ value, field }: { value: unknown; field: FieldDefinition }) {
+  const { t } = useI18n()
   if (value == null || value === '') {
-    return <span className="text-muted-foreground/40 text-sm">空欄</span>
+    return <span className="text-muted-foreground/40 text-sm">{t.taskDetail.empty}</span>
   }
 
   switch (field.type) {
@@ -168,7 +178,7 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
     }
     case 'multi_select': {
       const values = Array.isArray(value) ? value : []
-      if (values.length === 0) return <span className="text-muted-foreground/40 text-sm">空欄</span>
+      if (values.length === 0) return <span className="text-muted-foreground/40 text-sm">{t.taskDetail.empty}</span>
       return (
         <div className="flex flex-wrap gap-1">
           {values.map((v: string) => (
@@ -340,6 +350,7 @@ function DetailMultiSelectEditor({
   const current = Array.isArray(value) ? (value as string[]) : []
   const [selected, setSelected] = useState<string[]>(current)
   const [inputValue, setInputValue] = useState('')
+  const { t } = useI18n()
 
   const toggle = (v: string) => {
     setSelected((prev) =>
@@ -374,7 +385,7 @@ function DetailMultiSelectEditor({
           if (e.key === 'Escape') onCancel()
         }}
         onBlur={() => onSave(selected.length > 0 ? selected : undefined)}
-        placeholder="タグを入力してEnter..."
+        placeholder={t.taskDetail.tagsPlaceholder}
         className="w-full text-sm outline-none bg-transparent"
         autoFocus
       />
@@ -413,6 +424,7 @@ function MemoSection({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value ?? '')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { t } = useI18n()
 
   // value が外部から変わったら draft をリセット
   useEffect(() => {
@@ -440,7 +452,7 @@ function MemoSection({
     <div className="mt-6 border-t border-border pt-4">
       <div className="flex items-center gap-2 mb-2">
         <StickyNote size={14} className="text-muted-foreground" />
-        <span className="text-xs font-medium text-muted-foreground">メモ</span>
+        <span className="text-xs font-medium text-muted-foreground">{t.taskDetail.memoLabel}</span>
       </div>
       {editing ? (
         <div>
@@ -450,7 +462,7 @@ function MemoSection({
             onChange={(e) => setDraft(e.target.value)}
             rows={5}
             className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y"
-            placeholder="メモを入力..."
+            placeholder={t.taskDetail.memoPlaceholder}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setDraft(value ?? '')
@@ -466,13 +478,13 @@ function MemoSection({
               }}
               className="rounded px-3 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={save}
               className="rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              保存
+              {t.common.save}
             </button>
           </div>
         </div>
@@ -484,7 +496,7 @@ function MemoSection({
           {value ? (
             <span className="text-foreground">{value}</span>
           ) : (
-            <span className="text-muted-foreground/40">クリックしてメモを追加...</span>
+            <span className="text-muted-foreground/40">{t.taskDetail.memoClickToAdd}</span>
           )}
         </div>
       )}

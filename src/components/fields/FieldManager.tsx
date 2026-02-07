@@ -18,23 +18,13 @@ import { useViewStore } from '@/stores/view-store'
 import type { FieldType, FieldDefinition } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-  text: 'テキスト',
-  number: '数値',
-  select: 'セレクト',
-  multi_select: 'マルチセレクト',
-  date: '日付',
-  person: '担当者',
-  checkbox: 'チェックボックス',
-  url: 'URL',
-  progress: '進捗',
-}
+import { useI18n } from '@/i18n'
 
 export function FieldManager() {
   const { fields, addField, updateField, deleteField, reorderFields } = useTaskStore()
   const { views, updateView } = useViewStore()
   const [showAddForm, setShowAddForm] = useState(false)
+  const { t } = useI18n()
 
   /** フィールドの表示/非表示を切り替え、全ビューの visibleFieldIds にも反映する */
   const toggleVisibility = useCallback(
@@ -81,12 +71,12 @@ export function FieldManager() {
     <div className="p-3">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          フィールド管理
+          {t.fieldManager.title}
         </h3>
         <button
           onClick={() => setShowAddForm(true)}
           className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-          title="フィールドを追加"
+          title={t.fieldManager.addField}
         >
           <Plus size={14} />
         </button>
@@ -154,6 +144,8 @@ function SortableFieldItem({
   onToggleVisibility: () => void
   onDelete: () => void
 }) {
+  const { t } = useI18n()
+  const FIELD_TYPE_LABELS: Record<FieldType, string> = t.fieldTypes
   const {
     attributes,
     listeners,
@@ -194,7 +186,7 @@ function SortableFieldItem({
       <button
         onClick={onToggleVisibility}
         className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-        title={field.visible ? '非表示にする' : '表示する'}
+        title={field.visible ? t.fieldManager.hide : t.fieldManager.show}
       >
         {field.visible ? <Eye size={12} /> : <EyeOff size={12} />}
       </button>
@@ -203,7 +195,7 @@ function SortableFieldItem({
         <button
           onClick={onDelete}
           className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
-          title="フィールドを削除"
+          title={t.fieldManager.deleteField}
         >
           <Trash2 size={12} />
         </button>
@@ -221,6 +213,8 @@ function AddFieldForm({
 }) {
   const [name, setName] = useState('')
   const [type, setType] = useState<FieldType>('text')
+  const { t } = useI18n()
+  const FIELD_TYPE_LABELS: Record<FieldType, string> = t.fieldTypes
 
   return (
     <div className="mt-2 rounded border border-border bg-background p-2 space-y-2">
@@ -228,7 +222,7 @@ function AddFieldForm({
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="フィールド名"
+        placeholder={t.fieldManager.fieldNamePlaceholder}
         className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
         autoFocus
       />
@@ -237,8 +231,8 @@ function AddFieldForm({
         onChange={(e) => setType(e.target.value as FieldType)}
         className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
       >
-        {(Object.entries(FIELD_TYPE_LABELS) as [FieldType, string][]).map(([t, label]) => (
-          <option key={t} value={t}>
+        {(Object.entries(FIELD_TYPE_LABELS) as [FieldType, string][]).map(([val, label]) => (
+          <option key={val} value={val}>
             {label}
           </option>
         ))}
@@ -248,7 +242,7 @@ function AddFieldForm({
           onClick={onCancel}
           className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
         >
-          キャンセル
+          {t.common.cancel}
         </button>
         <button
           onClick={() => {
@@ -257,7 +251,7 @@ function AddFieldForm({
           disabled={!name.trim()}
           className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
-          追加
+          {t.common.add}
         </button>
       </div>
     </div>

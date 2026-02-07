@@ -7,6 +7,7 @@ import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/i18n'
 
 export function TableView() {
   const { addTask, deleteTask, updateTask, updateField } = useTaskStore()
@@ -14,6 +15,7 @@ export function TableView() {
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
   const activeView = useViewStore((s) => s.getActiveView())
   const { setSorts } = useViewStore()
+  const { t } = useI18n()
 
   const visibleFields = fields
     .filter((f) => activeView.visibleFieldIds.includes(f.id))
@@ -111,7 +113,7 @@ export function TableView() {
                         ? 'text-green-500 hover:text-green-600'
                         : 'text-muted-foreground/40 hover:text-green-500'
                     )}
-                    title={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done' ? '進行中に戻す' : '完了にする'}
+                    title={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done' ? t.table.markInProgress : t.table.markDone}
                   >
                     {task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
                       ? <CheckSquare size={16} />
@@ -121,7 +123,7 @@ export function TableView() {
                   <button
                     onClick={() => deleteTask(task.id)}
                     className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
-                    title="タスクを削除"
+                    title={t.table.deleteTask}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -152,7 +154,7 @@ export function TableView() {
                 className="flex w-full items-center gap-2 px-5 py-2 text-sm text-muted-foreground hover:bg-muted/30 transition-colors"
               >
                 <Plus size={14} />
-                新規タスク
+                {t.common.newTask}
               </button>
             </td>
           </tr>
@@ -459,6 +461,7 @@ function MultiSelectEditor({
   const [selected, setSelected] = useState<string[]>(value)
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -504,7 +507,7 @@ function MultiSelectEditor({
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => onSave(selected.length > 0 ? selected : undefined)}
-        placeholder="入力してEnter..."
+        placeholder={t.table.enterToAdd}
         className="w-full text-xs px-1 py-0.5 outline-none bg-transparent"
       />
       {/* 既存オプション */}

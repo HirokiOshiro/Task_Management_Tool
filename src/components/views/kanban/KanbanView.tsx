@@ -21,6 +21,7 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { Task } from '@/types/task'
 import { cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
+import { useI18n } from '@/i18n'
 
 export function KanbanView() {
   const { updateTask, addTask } = useTaskStore()
@@ -30,6 +31,7 @@ export function KanbanView() {
   const groupFieldId = activeView.kanbanGroupFieldId ?? SYSTEM_FIELD_IDS.STATUS
   const groupField = fields.find((f) => f.id === groupFieldId)
   const options = groupField?.options ?? []
+  const { t } = useI18n()
 
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -37,16 +39,16 @@ export function KanbanView() {
   const columns = useMemo(() => {
     const cols = options.map((option) => ({
       ...option,
-      tasks: tasks.filter((t) => t.fieldValues[groupFieldId] === option.id),
+      tasks: tasks.filter((tk) => tk.fieldValues[groupFieldId] === option.id),
     }))
     // 未分類
     const unassigned = tasks.filter(
-      (t) => !options.some((o) => o.id === t.fieldValues[groupFieldId])
+      (tk) => !options.some((o) => o.id === tk.fieldValues[groupFieldId])
     )
     if (unassigned.length > 0) {
       cols.push({
         id: '__unassigned__',
-        label: '未分類',
+        label: t.kanban.uncategorized,
         color: '#94a3b8',
         tasks: unassigned,
       })
@@ -58,7 +60,7 @@ export function KanbanView() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
 
-  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null
+  const activeTask = activeId ? tasks.find((tk) => tk.id === activeId) : null
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(String(event.active.id))
@@ -76,7 +78,7 @@ export function KanbanView() {
       if (overId.startsWith('column-')) {
         const targetColumnId = overId.replace('column-', '')
         const newValue = targetColumnId === '__unassigned__' ? undefined : targetColumnId
-        const task = tasks.find((t) => t.id === activeTaskId)
+        const task = tasks.find((tk) => tk.id === activeTaskId)
         if (task && task.fieldValues[groupFieldId] !== newValue) {
           updateTask(activeTaskId, groupFieldId, newValue)
         }
@@ -103,10 +105,10 @@ export function KanbanView() {
       }
 
       // ドロップ先が別のタスクの場合 - そのタスクのカラムに移動
-      const overTask = tasks.find((t) => t.id === overId)
+      const overTask = tasks.find((tk) => tk.id === overId)
       if (overTask) {
         const overColumnValue = overTask.fieldValues[groupFieldId]
-        const activeTask = tasks.find((t) => t.id === activeTaskId)
+        const activeTask = tasks.find((tk) => tk.id === activeTaskId)
         if (activeTask && activeTask.fieldValues[groupFieldId] !== overColumnValue) {
           updateTask(activeTaskId, groupFieldId, overColumnValue)
         }
@@ -168,8 +170,8 @@ function KanbanColumn({
   onCardClick: (taskId: string) => void
   onAddTask: () => void
 }) {
-  const taskIds = column.tasks.map((t) => t.id)
-
+  const taskIds = column.tasks.map((task) => task.id)
+  const { t } = useI18n()
   return (
     <div className="flex w-72 flex-shrink-0 flex-col rounded-lg bg-muted/30">
       {/* カラムヘッダー */}
@@ -199,7 +201,7 @@ function KanbanColumn({
         className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
       >
         <Plus size={14} />
-        新規タスク
+        {t.common.newTask}
       </button>
     </div>
   )
@@ -273,6 +275,7 @@ function KanbanCardContent({
   fields: ReturnType<typeof useTaskStore.getState>['fields']
   isDragging?: boolean
 }) {
+  const { t } = useI18n()
   const priorityField = fields.find((f) => f.id === SYSTEM_FIELD_IDS.PRIORITY)
   const priorityOption = priorityField?.options?.find(
     (o) => o.id === task.fieldValues[SYSTEM_FIELD_IDS.PRIORITY]
@@ -286,7 +289,7 @@ function KanbanCardContent({
       )}
     >
       <div className="text-sm font-medium leading-snug">
-        {String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? '無題')}
+        {String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? t.common.untitled)}
       </div>
 
       {task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE] != null && (

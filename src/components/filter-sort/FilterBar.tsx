@@ -7,21 +7,7 @@ import { X, Plus, Filter, ListFilter, List } from 'lucide-react'
 import { generateId } from '@/lib/id'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-
-const OPERATOR_LABELS: Record<FilterOperator, string> = {
-  equals: '等しい',
-  not_equals: '等しくない',
-  contains: '含む',
-  not_contains: '含まない',
-  is_empty: '空',
-  is_not_empty: '空でない',
-  greater_than: 'より大きい',
-  less_than: 'より小さい',
-  before: 'より前',
-  after: 'より後',
-  in: 'いずれか',
-  not_in: 'いずれでもない',
-}
+import { useI18n } from '@/i18n'
 
 function getOperatorsForType(type: FieldDefinition['type']): FilterOperator[] {
   switch (type) {
@@ -50,6 +36,9 @@ export function FilterBar() {
   const { setFilters } = useViewStore()
   const { fields } = useTaskStore()
   const [showAdd, setShowAdd] = useState(false)
+  const { t } = useI18n()
+
+  const OPERATOR_LABELS: Record<FilterOperator, string> = t.filter.operators
 
   const filters = activeView.filters
 
@@ -110,10 +99,10 @@ export function FilterBar() {
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
-        title="完了タスクを非表示"
+        title={t.filter.hideDoneTitle}
       >
         <ListFilter size={13} />
-        完了以外
+        {t.filter.excludeDone}
       </button>
       <button
         onClick={setShowAll}
@@ -123,10 +112,10 @@ export function FilterBar() {
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
-        title="全タスクを表示"
+        title={t.filter.showAllTitle}
       >
         <List size={13} />
-        全て
+        {t.filter.showAll}
       </button>
     </div>
   )
@@ -140,7 +129,7 @@ export function FilterBar() {
           className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
           <Filter size={14} />
-          フィルタ
+          {t.filter.filter}
         </button>
       </div>
     )
@@ -217,7 +206,7 @@ export function FilterBar() {
                   type={field.type === 'number' || field.type === 'progress' ? 'number' : 'text'}
                   value={String(filter.value ?? '')}
                   onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
-                  placeholder="値..."
+                  placeholder={t.filter.valuePlaceholder}
                   className="bg-transparent outline-none text-xs w-20"
                 />
               )
@@ -244,7 +233,7 @@ export function FilterBar() {
             className="bg-transparent outline-none text-xs"
             autoFocus
           >
-            <option value="">フィールドを選択...</option>
+            <option value="">{t.filter.selectField}</option>
             {fields.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}

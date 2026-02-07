@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useTaskStore } from '@/stores/task-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useToastStore } from '@/stores/toast-store'
+import { useI18n } from '@/i18n'
 import { LocalFileAdapter } from '@/adapters/local-file-adapter'
 import { MemoryAdapter } from '@/adapters/memory-adapter'
 import { writeExcel } from '@/lib/excel/writer'
@@ -12,6 +13,7 @@ export function DataSourceSelector() {
   const { setAdapter, setConnection, setStatus, setLastSaved, setError, status } =
     useConnectionStore()
   const addToast = useToastStore((s) => s.addToast)
+  const { t } = useI18n()
   const [saving, setSaving] = useState(false)
 
   // ファイルを開く
@@ -24,14 +26,14 @@ export function DataSourceSelector() {
       loadDataSet(dataSet)
       setAdapter(adapter)
       setConnection(connection)
-      addToast(`${connection.name} を読み込みました`, 'success')
+      addToast(t.data.loadedFile(connection.name), 'success')
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         // ユーザーがキャンセルした場合
         setStatus('disconnected')
         return
       }
-      const msg = String((err as Error).message ?? 'ファイルの読み込みに失敗しました')
+      const msg = String((err as Error).message ?? t.data.loadFailed)
       setError(msg)
       addToast(msg, 'error')
     }
@@ -55,9 +57,9 @@ export function DataSourceSelector() {
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
-      addToast('JSONファイルを保存しました', 'success')
+      addToast(t.data.savedJson, 'success')
     } catch (err) {
-      const msg = String((err as Error).message ?? '保存に失敗しました')
+      const msg = String((err as Error).message ?? t.data.saveFailed)
       setError(msg)
       addToast(msg, 'error')
     } finally {
@@ -85,9 +87,9 @@ export function DataSourceSelector() {
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
-      addToast('Excelファイルを保存しました', 'success')
+      addToast(t.data.savedExcel, 'success')
     } catch (err) {
-      const msg = String((err as Error).message ?? '保存に失敗しました')
+      const msg = String((err as Error).message ?? t.data.saveFailed)
       setError(msg)
       addToast(msg, 'error')
     } finally {
@@ -101,14 +103,14 @@ export function DataSourceSelector() {
     const dataSet = await adapter.load()
     loadDataSet(dataSet)
     setAdapter(adapter)
-    setConnection({ type: 'memory', name: 'デモデータ' })
-    addToast('デモデータを読み込みました', 'info')
+    setConnection({ type: 'memory', name: t.data.demoDataTitle })
+    addToast(t.data.loadedDemo, 'info')
   }, [loadDataSet, setAdapter, setConnection, addToast])
 
   return (
     <div className="p-3 space-y-1">
       <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        データ
+        {t.data.label}
       </div>
 
       {/* ファイルを開く */}
@@ -118,7 +120,7 @@ export function DataSourceSelector() {
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50 disabled:opacity-50"
       >
         {status === 'connecting' ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
-        ファイルを開く
+        {t.data.openFile}
       </button>
 
       {/* JSON保存 */}
@@ -128,7 +130,7 @@ export function DataSourceSelector() {
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50 disabled:opacity-50"
       >
         <FileJson size={16} />
-        JSONで保存
+        {t.data.saveJson}
         {isDirty && <span className="ml-auto h-2 w-2 rounded-full bg-amber-500" />}
       </button>
 
@@ -139,7 +141,7 @@ export function DataSourceSelector() {
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50 disabled:opacity-50"
       >
         <FileSpreadsheet size={16} />
-        Excelで保存
+        {t.data.saveExcel}
         {isDirty && <span className="ml-auto h-2 w-2 rounded-full bg-amber-500" />}
       </button>
 
@@ -149,7 +151,7 @@ export function DataSourceSelector() {
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50"
       >
         <Database size={16} />
-        デモデータ
+        {t.data.demoData}
       </button>
     </div>
   )

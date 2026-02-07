@@ -15,14 +15,18 @@ import {
   isToday,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useI18n } from '@/i18n'
 
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const { filteredTasks: tasks, fields } = useFilteredTasks()
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
+  const { t, lang } = useI18n()
+  const dateFnsLocale = lang === 'ja' ? ja : enUS
+  const WEEKDAYS = t.calendar.weekDays
 
   // 月の全日を取得（前後の週も含む）
   const calendarDays = useMemo(() => {
@@ -57,7 +61,7 @@ export function CalendarView() {
           <ChevronLeft size={20} />
         </button>
         <h2 className="text-lg font-semibold">
-          {format(currentDate, 'yyyy年 M月', { locale: ja })}
+          {format(currentDate, t.calendar.monthFormat, { locale: dateFnsLocale })}
         </h2>
         <button
           onClick={() => setCurrentDate(addMonths(currentDate, 1))}
@@ -69,7 +73,7 @@ export function CalendarView() {
           onClick={() => setCurrentDate(new Date())}
           className="rounded-md border border-border px-3 py-1 text-sm hover:bg-accent"
         >
-          今日
+          {t.common.today}
         </button>
       </div>
 
@@ -140,13 +144,13 @@ export function CalendarView() {
                       title={String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? '')}
                       onClick={() => openDetailPanel(task.id)}
                     >
-                      {String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? '無題')}
+                      {String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? t.common.untitled)}
                     </div>
                   )
                 })}
                 {dayTasks.length > 3 && (
                   <div className="text-[10px] text-muted-foreground text-center">
-                    +{dayTasks.length - 3}件
+                    +{dayTasks.length - 3}{t.calendar.moreItems}
                   </div>
                 )}
               </div>

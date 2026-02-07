@@ -15,6 +15,8 @@ import {
   max as dateMax,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
+import { useI18n } from '@/i18n'
 
 const DAY_WIDTH = 32
 const ROW_HEIGHT = 36
@@ -49,6 +51,8 @@ export function GanttView() {
 
   const [dragState, setDragState] = useState<DragState | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { t, lang } = useI18n()
+  const dateFnsLocale = lang === 'ja' ? ja : enUS
 
   // ガント用のタスクデータに変換
   const ganttTasks = useMemo(() => {
@@ -67,7 +71,7 @@ export function GanttView() {
 
         return {
           id: task.id,
-          title: String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? '無題'),
+          title: String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? t.common.untitled),
           start,
           end: end < start ? start : end,
           progress,
@@ -127,7 +131,7 @@ export function GanttView() {
       if (m !== currentMonth || y !== currentYear) {
         if (currentMonth !== -1) {
           headers.push({
-            label: format(days[startIndex], 'yyyy年M月', { locale: ja }),
+            label: format(days[startIndex], t.gantt.monthFormat, { locale: dateFnsLocale }),
             startIndex,
             span: i - startIndex,
           })
@@ -140,7 +144,7 @@ export function GanttView() {
     // 最後の月
     if (days.length > 0) {
       headers.push({
-        label: format(days[startIndex], 'yyyy年M月', { locale: ja }),
+        label: format(days[startIndex], t.gantt.monthFormat, { locale: dateFnsLocale }),
         startIndex,
         span: days.length - startIndex,
       })
@@ -264,7 +268,7 @@ export function GanttView() {
   if (sortedGanttTasks.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        ガントチャートを表示するにはタスクに開始日または期限を設定してください。
+        {t.gantt.emptyMessage}
       </div>
     )
   }
@@ -279,7 +283,7 @@ export function GanttView() {
         <div className="sticky top-0 z-10 flex border-b border-border bg-background">
           {/* タスク名カラム */}
           <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 flex items-end pb-1">
-            <div className="text-xs font-medium text-muted-foreground">タスク名</div>
+            <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
           </div>
           {/* 日付ヘッダー */}
           <div className="flex flex-col">
@@ -314,7 +318,7 @@ export function GanttView() {
                     style={{ width: DAY_WIDTH, height: HEADER_HEIGHT - MONTH_HEADER_HEIGHT }}
                   >
                     <span>{format(day, 'd')}</span>
-                    <span className="text-[10px]">{format(day, 'E', { locale: ja })}</span>
+                    <span className="text-[10px]">{format(day, 'E', { locale: dateFnsLocale })}</span>
                   </div>
                 )
               })}

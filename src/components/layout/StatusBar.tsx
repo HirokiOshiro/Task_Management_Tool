@@ -1,10 +1,12 @@
 import { useConnectionStore } from '@/stores/connection-store'
 import { useTaskStore } from '@/stores/task-store'
+import { useI18n } from '@/i18n'
 import { Cloud, CloudOff, HardDrive, Loader2, Save } from 'lucide-react'
 
 export function StatusBar() {
   const { status, connection, lastSaved } = useConnectionStore()
   const { isDirty, tasks } = useTaskStore()
+  const { t } = useI18n()
 
   const formatTime = (date: Date | null) => {
     if (!date) return null
@@ -21,30 +23,30 @@ export function StatusBar() {
           {status === 'disconnected' && <CloudOff size={12} />}
           {status === 'error' && <CloudOff size={12} className="text-destructive" />}
           {status === 'connecting' && <Loader2 size={12} className="animate-spin" />}
-          <span>{connection?.name ?? 'メモリ（デモ）'}</span>
+          <span>{connection?.name ?? t.statusBar.memoryDemo}</span>
         </div>
 
         {/* データソース */}
         <div className="flex items-center gap-1">
           <HardDrive size={12} />
-          <span>{connection?.type === 'local' ? 'ローカル' : connection?.type === 'sharepoint' ? 'SharePoint' : 'メモリ'}</span>
+          <span>{connection?.type === 'local' ? t.statusBar.local : connection?.type === 'sharepoint' ? 'SharePoint' : t.statusBar.memory}</span>
         </div>
 
         {/* 自動保存 */}
         <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
           <Save size={11} />
-          <span>自動保存 ON</span>
+          <span>{t.statusBar.autoSaveOn}</span>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         {/* タスク数 */}
-        <span>{tasks.length} タスク</span>
+        <span>{tasks.length} {t.statusBar.tasksCount}</span>
 
         {/* 保存状態 */}
-        {isDirty && <span className="text-amber-500">ファイル未エクスポート</span>}
+        {isDirty && <span className="text-amber-500">{t.statusBar.notExported}</span>}
         {lastSaved && !isDirty && (
-          <span>最終エクスポート: {formatTime(lastSaved)}</span>
+          <span>{t.statusBar.lastExport} {formatTime(lastSaved)}</span>
         )}
       </div>
     </footer>

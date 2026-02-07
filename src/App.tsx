@@ -3,12 +3,14 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { useTaskStore, hasPersistedData } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
+import { useI18n } from '@/i18n'
 import { MemoryAdapter } from '@/adapters/memory-adapter'
 
 function App() {
   const loadDataSet = useTaskStore((s) => s.loadDataSet)
   const isLoaded = useTaskStore((s) => s.isLoaded)
   const theme = useUIStore((s) => s.theme)
+  const { t } = useI18n()
 
   // 初期化: localStorageにデータがなければデモデータをロード
   useEffect(() => {
@@ -47,7 +49,7 @@ function App() {
   if (!isLoaded) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-muted-foreground">読み込み中...</div>
+        <div className="text-muted-foreground">{t.common.loading}</div>
       </div>
     )
   }
