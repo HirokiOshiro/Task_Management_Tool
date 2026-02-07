@@ -29,14 +29,20 @@ function createDefaultViews(): ViewConfig[] {
       name: 'テーブル',
       type: 'table',
       sorts: [],
-      filters: [],
+      filters: [
+        {
+          id: 'default-hide-done',
+          fieldId: SYSTEM_FIELD_IDS.STATUS,
+          operator: 'not_equals' as const,
+          value: 'done',
+        },
+      ],
       visibleFieldIds: [
         SYSTEM_FIELD_IDS.TITLE,
         SYSTEM_FIELD_IDS.STATUS,
-        SYSTEM_FIELD_IDS.ASSIGNEE,
         SYSTEM_FIELD_IDS.START_DATE,
         SYSTEM_FIELD_IDS.DUE_DATE,
-        SYSTEM_FIELD_IDS.PRIORITY,
+        SYSTEM_FIELD_IDS.ASSIGNEE,
         SYSTEM_FIELD_IDS.TAGS,
       ],
     },
