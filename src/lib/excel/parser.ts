@@ -3,6 +3,7 @@ import type { TaskDataSet, FieldDefinition, Task } from '@/types/task'
 import { createDefaultFields } from '@/types/task'
 import { generateId } from '@/lib/id'
 import type { ViewConfig } from '@/types/view'
+import { sanitizeColor } from '@/lib/sanitize'
 
 /** Excelファイル(ArrayBuffer)からTaskDataSetに変換 */
 export function parseExcel(data: ArrayBuffer): TaskDataSet {
@@ -18,7 +19,14 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
     const json = sheet['A1']?.v
     if (typeof json === 'string') {
       try {
-        fields = JSON.parse(json)
+        const parsed = JSON.parse(json)
+        if (Array.isArray(parsed) && parsed.every(isValidFieldDef)) {
+          // オプションのカラー値をサニタイズ
+          fields = parsed.map((f: FieldDefinition) => ({
+            ...f,
+            options: f.options?.map((o) => ({ ...o, color: sanitizeColor(o.color) })),
+          }))
+        }
       } catch {
         // パース失敗時はnullのまま
       }
@@ -31,7 +39,10 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
     const json = sheet['A1']?.v
     if (typeof json === 'string') {
       try {
-        viewConfigs = JSON.parse(json)
+        const parsed = JSON.parse(json)
+        if (Array.isArray(parsed)) {
+          viewConfigs = parsed.filter(isValidViewConfig)
+        }
       } catch {
         // パース失敗時は空配列
       }
@@ -222,6 +233,20 @@ function inferType(values: unknown[]): FieldDefinition['type'] {
   if (allUrl) return 'url'
 
   return 'text'
+}
+
+/** _FieldDefs の各要素が最低限の構造を持っているか検証 */
+function isValidFieldDef(raw: unknown): raw is FieldDefinition {
+  if (raw == null || typeof raw !== 'object') return false
+  const f = raw as Record<string, unknown>
+  return typeof f.id === 'string' && typeof f.name === 'string' && typeof f.type === 'string'
+}
+
+/** _ViewConfigs の各要素が最低限の構造を持っているか検証 */
+function isValidViewConfig(raw: unknown): raw is ViewConfig {
+  if (raw == null || typeof raw !== 'object') return false
+  const v = raw as Record<string, unknown>
+  return typeof v.id === 'string' && typeof v.type === 'string' && Array.isArray(v.sorts)
 }
 
 /** セル値をフィールド型に変換 */

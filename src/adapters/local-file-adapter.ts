@@ -3,6 +3,7 @@ import type { DataAdapter, DataSourceConnection } from '@/types/adapter'
 import type { TaskDataSet } from '@/types/task'
 import { parseExcel } from '@/lib/excel/parser'
 import { writeExcel } from '@/lib/excel/writer'
+import { MAX_FILE_SIZE, validateTaskDataSet } from '@/lib/sanitize'
 
 export class LocalFileAdapter implements DataAdapter {
   readonly type = 'local' as const
@@ -27,6 +28,11 @@ export class LocalFileAdapter implements DataAdapter {
     // browser-fs-accessがFileSystemFileHandleを返す場合
     this.fileHandle = (file as unknown as { handle?: FileSystemFileHandle }).handle ?? null
     this.connected = true
+
+    // ファイルサイズチェック
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`ファイルサイズが上限（${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB）を超えています`)
+    }
 
     // ファイル内容を一時的に保持
     const buffer = await file.arrayBuffer()
@@ -66,7 +72,7 @@ export class LocalFileAdapter implements DataAdapter {
     // JSON
     const text = new TextDecoder().decode(buffer)
     const data = JSON.parse(text)
-    return data as TaskDataSet
+    return validateTaskDataSet(data)
   }
 
   async save(data: TaskDataSet): Promise<void> {

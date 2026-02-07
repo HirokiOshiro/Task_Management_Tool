@@ -5,6 +5,7 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function TaskDetailPanel() {
@@ -171,7 +172,7 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
       return (
         <span
           className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-          style={{ backgroundColor: option.color + '20', color: option.color }}
+          style={{ backgroundColor: sanitizeColor(option.color) + '20', color: sanitizeColor(option.color) }}
         >
           {translateOptionLabel(t, field.id, option.id, option.label)}
         </span>

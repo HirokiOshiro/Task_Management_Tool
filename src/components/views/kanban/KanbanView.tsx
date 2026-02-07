@@ -20,6 +20,7 @@ import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { Task } from '@/types/task'
 import { cn } from '@/lib/utils'
+import { sanitizeColor } from '@/lib/sanitize'
 import { Plus } from 'lucide-react'
 import { useI18n, translateOptionLabel } from '@/i18n'
 
@@ -181,7 +182,7 @@ function KanbanColumn({
       <div className="flex items-center gap-2 px-3 py-2.5">
         <span
           className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: column.color }}
+          style={{ backgroundColor: sanitizeColor(column.color) }}
         />
         <span className="text-sm font-medium truncate">{translateOptionLabel(t, groupFieldId, column.id, column.label)}</span>
         <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums">
@@ -315,7 +316,7 @@ function KanbanCardContent({
         {priorityOption && (
           <span
             className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-            style={{ backgroundColor: priorityOption.color + '20', color: priorityOption.color }}
+            style={{ backgroundColor: sanitizeColor(priorityOption.color) + '20', color: sanitizeColor(priorityOption.color) }}
           >
             {translateOptionLabel(t, SYSTEM_FIELD_IDS.PRIORITY, priorityOption.id, priorityOption.label)}
           </span>

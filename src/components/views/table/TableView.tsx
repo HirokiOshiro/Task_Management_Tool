@@ -7,6 +7,7 @@ import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { sanitizeUrl, sanitizeColor } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function TableView() {
@@ -234,7 +235,7 @@ function CellRenderer({
       return (
         <span
           className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-          style={{ backgroundColor: option.color + '20', color: option.color }}
+          style={{ backgroundColor: sanitizeColor(option.color) + '20', color: sanitizeColor(option.color) }}
         >
           {translateOptionLabel(t, field.id, option.id, option.label)}
         </span>
@@ -281,10 +282,11 @@ function CellRenderer({
     }
     case 'date':
       return <span className="tabular-nums">{String(value)}</span>
-    case 'url':
-      return (
+    case 'url': {
+      const safeHref = sanitizeUrl(String(value))
+      return safeHref ? (
         <a
-          href={String(value)}
+          href={safeHref}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary underline text-xs truncate block max-w-[200px]"
@@ -292,7 +294,10 @@ function CellRenderer({
         >
           {String(value)}
         </a>
+      ) : (
+        <span className="text-xs text-muted-foreground">{String(value)}</span>
       )
+    }
     case 'person':
       return (
         <div className="flex items-center gap-1.5">

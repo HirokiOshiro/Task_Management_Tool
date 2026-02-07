@@ -16,6 +16,7 @@ import {
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
+import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
 
 const DAY_WIDTH = 32
@@ -75,7 +76,7 @@ export function GanttView() {
           start,
           end: end < start ? start : end,
           progress,
-          color: statusOption?.color ?? '#3b82f6',
+          color: sanitizeColor(statusOption?.color ?? '#3b82f6'),
         }
       })
       .filter(Boolean) as GanttTask[]
@@ -361,7 +362,7 @@ export function GanttView() {
                     left: startOffset * DAY_WIDTH + 2,
                     width: barWidth,
                     height: ROW_HEIGHT - 12,
-                    backgroundColor: task.color,
+                    backgroundColor: sanitizeColor(task.color),
                     cursor: isDragging ? 'grabbing' : 'grab',
                   }}
                   title={`${task.title} (${format(start, 'M/d')} 〜 ${format(end, 'M/d')})`}

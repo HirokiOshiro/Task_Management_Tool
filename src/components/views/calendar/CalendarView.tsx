@@ -17,6 +17,7 @@ import {
 import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
 
 
@@ -138,8 +139,8 @@ export function CalendarView() {
                       key={task.id}
                       className="cursor-pointer truncate rounded px-1 py-0.5 text-[11px] leading-tight hover:opacity-80"
                       style={{
-                        backgroundColor: (statusOption?.color ?? '#94a3b8') + '20',
-                        color: statusOption?.color ?? '#94a3b8',
+                        backgroundColor: sanitizeColor(statusOption?.color ?? '#94a3b8') + '20',
+                        color: sanitizeColor(statusOption?.color ?? '#94a3b8'),
                       }}
                       title={String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? '')}
                       onClick={() => openDetailPanel(task.id)}
