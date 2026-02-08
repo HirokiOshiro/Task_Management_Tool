@@ -386,6 +386,11 @@ export function GanttView() {
                     status={taskStatus}
                     onClick={(e) => e.stopPropagation()}
                     onBeforeComplete={() => setFadingTaskIds((prev) => new Set(prev).add(task.id))}
+                    onAfterComplete={() => setFadingTaskIds((prev) => {
+                      const next = new Set(prev)
+                      next.delete(task.id)
+                      return next
+                    })}
                   />
                 </div>
                 {/* タスク名 */}

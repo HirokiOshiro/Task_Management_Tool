@@ -158,6 +158,7 @@ function TaskRow({
             taskId={task.id}
             status={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string}
             onBeforeComplete={() => setFadingOut(true)}
+            onAfterComplete={() => setFadingOut(false)}
           />
           <button
             onClick={() => deleteTask(task.id)}

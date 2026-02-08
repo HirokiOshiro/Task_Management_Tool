@@ -14,9 +14,11 @@ interface TaskCheckButtonProps {
   onClick?: (e: React.MouseEvent) => void
   /** store 更新直前に呼ばれる。行フェードアウト等に使用 */
   onBeforeComplete?: () => void
+  /** store 更新直後に呼ばれる。フェードアウト状態のクリーンアップに使用 */
+  onAfterComplete?: () => void
 }
 
-export function TaskCheckButton({ taskId, status, onClick, onBeforeComplete }: TaskCheckButtonProps) {
+export function TaskCheckButton({ taskId, status, onClick, onBeforeComplete, onAfterComplete }: TaskCheckButtonProps) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const { t } = useI18n()
   const isDone = status === 'done'
@@ -39,12 +41,13 @@ export function TaskCheckButton({ taskId, status, onClick, onBeforeComplete }: T
       setTimeout(() => {
         updateTask(taskId, SYSTEM_FIELD_IDS.STATUS, 'done')
         pendingRef.current = false
+        onAfterComplete?.()
       }, COMPLETE_DELAY)
     } else {
       // 完了 → 進行中: 即座に更新
       updateTask(taskId, SYSTEM_FIELD_IDS.STATUS, 'in_progress')
     }
-  }, [onClick, isDone, taskId, updateTask, onBeforeComplete])
+  }, [onClick, isDone, taskId, updateTask, onBeforeComplete, onAfterComplete])
 
   // アニメーション中は完了済みの見た目を先行表示
   const showDone = isDone || animating
