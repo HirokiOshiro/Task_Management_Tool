@@ -172,6 +172,9 @@ export const ja = {
     taskName: 'タスク名',
     monthFormat: 'yyyy年M月',
     scrollToToday: '今日の位置にスクロール',
+    selectedCount: '件選択中 — ドラッグで一括移動',
+    clearSelection: '解除',
+    taskNamePlaceholder: 'タスク名を入力…',
   },
 
   // ── Calendar View ──
@@ -392,6 +395,9 @@ export type Locale = {
     taskName: string
     monthFormat: string
     scrollToToday: string
+    selectedCount: string
+    clearSelection: string
+    taskNamePlaceholder: string
   }
   calendar: {
     monthFormat: string

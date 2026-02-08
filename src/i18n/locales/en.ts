@@ -174,6 +174,9 @@ export const en: Locale = {
     taskName: 'Task Name',
     monthFormat: 'MMM yyyy',
     scrollToToday: 'Scroll to today',
+    selectedCount: ' selected — drag to move together',
+    clearSelection: 'Clear',
+    taskNamePlaceholder: 'Enter task name…',
   },
 
   // ── Calendar View ──

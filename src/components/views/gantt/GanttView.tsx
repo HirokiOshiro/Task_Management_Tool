@@ -18,7 +18,7 @@ import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
 import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 
@@ -27,6 +27,7 @@ const ROW_HEIGHT = 36
 const HEADER_HEIGHT = 72
 const HANDLE_WIDTH = 8
 const MONTH_HEADER_HEIGHT = 24
+const TASK_NAME_WIDTH = 240
 
 type DragMode = 'move' | 'resize-start' | 'resize-end'
 
@@ -37,6 +38,18 @@ interface DragState {
   daysDelta: number
   originalStart: Date
   originalEnd: Date
+  /** 一括ドラッグ時の対象タスク群（ドラッグ元を除く） */
+  batchTargets?: { id: string; originalStart: Date; originalEnd: Date }[]
+}
+
+/** マーキー（範囲選択）状態 */
+interface MarqueeState {
+  /** ドラッグ開始地点（コンテナ内座標） */
+  startX: number
+  startY: number
+  /** 現在のマウス位置 */
+  currentX: number
+  currentY: number
 }
 
 interface GanttTask {
@@ -48,13 +61,27 @@ interface GanttTask {
   color: string
 }
 
+/** インラインタスク作成状態 */
+interface InlineCreateState {
+  /** クリック位置から算出した開始日 */
+  startDate: Date
+  /** 開始日 + 3日のデフォルト終了日 */
+  endDate: Date
+}
+
 export function GanttView() {
   const { filteredTasks: tasks, fields } = useFilteredTasks()
   const updateTaskFields = useTaskStore((s) => s.updateTaskFields)
+  const addTask = useTaskStore((s) => s.addTask)
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
 
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [fadingTaskIds, setFadingTaskIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [marquee, setMarquee] = useState<MarqueeState | null>(null)
+  const [inlineCreate, setInlineCreate] = useState<InlineCreateState | null>(null)
+  const [inlineTitle, setInlineTitle] = useState('')
+  const inlineInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { t, lang } = useI18n()
   const dateFnsLocale = lang === 'ja' ? ja : enUS
@@ -176,47 +203,71 @@ export function GanttView() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** ドラッグ中のタスクの表示位置を計算 */
+  /** ドラッグ中のタスクの表示位置を計算（一括ドラッグ対応） */
   const getDisplayDates = useCallback(
     (task: GanttTask): { start: Date; end: Date } => {
-      if (!dragState || dragState.taskId !== task.id) {
+      if (!dragState) {
         return { start: task.start, end: task.end }
       }
 
-      const { mode, daysDelta, originalStart, originalEnd } = dragState
+      // ドラッグ元タスク
+      if (dragState.taskId === task.id) {
+        const { mode, daysDelta, originalStart, originalEnd } = dragState
 
-      switch (mode) {
-        case 'move':
-          return {
-            start: addDays(originalStart, daysDelta),
-            end: addDays(originalEnd, daysDelta),
+        switch (mode) {
+          case 'move':
+            return {
+              start: addDays(originalStart, daysDelta),
+              end: addDays(originalEnd, daysDelta),
+            }
+          case 'resize-start': {
+            const newStart = addDays(originalStart, daysDelta)
+            return {
+              start: newStart > originalEnd ? originalEnd : newStart,
+              end: originalEnd,
+            }
           }
-        case 'resize-start': {
-          const newStart = addDays(originalStart, daysDelta)
-          return {
-            start: newStart > originalEnd ? originalEnd : newStart,
-            end: originalEnd,
+          case 'resize-end': {
+            const newEnd = addDays(originalEnd, daysDelta)
+            return {
+              start: originalStart,
+              end: newEnd < originalStart ? originalStart : newEnd,
+            }
           }
+          default:
+            return { start: task.start, end: task.end }
         }
-        case 'resize-end': {
-          const newEnd = addDays(originalEnd, daysDelta)
-          return {
-            start: originalStart,
-            end: newEnd < originalStart ? originalStart : newEnd,
-          }
-        }
-        default:
-          return { start: task.start, end: task.end }
       }
+
+      // 一括ドラッグのバッチ対象タスク（move のみ連動）
+      if (dragState.mode === 'move' && dragState.batchTargets) {
+        const bt = dragState.batchTargets.find((b) => b.id === task.id)
+        if (bt) {
+          return {
+            start: addDays(bt.originalStart, dragState.daysDelta),
+            end: addDays(bt.originalEnd, dragState.daysDelta),
+          }
+        }
+      }
+
+      return { start: task.start, end: task.end }
     },
     [dragState]
   )
 
-  /** ドラッグ開始 */
+  /** ドラッグ開始（一括ドラッグ対応） */
   const handleDragStart = useCallback(
     (e: React.MouseEvent, task: GanttTask, mode: DragMode) => {
       e.preventDefault()
       e.stopPropagation()
+
+      // 一括ドラッグ: 選択中のタスクを move する場合、バッチ対象を構築
+      let batchTargets: DragState['batchTargets'] = undefined
+      if (mode === 'move' && selectedIds.has(task.id) && selectedIds.size > 1) {
+        batchTargets = sortedGanttTasks
+          .filter((gt) => selectedIds.has(gt.id) && gt.id !== task.id)
+          .map((gt) => ({ id: gt.id, originalStart: gt.start, originalEnd: gt.end }))
+      }
 
       const state: DragState = {
         taskId: task.id,
@@ -225,6 +276,7 @@ export function GanttView() {
         daysDelta: 0,
         originalStart: task.start,
         originalEnd: task.end,
+        batchTargets,
       }
 
       setDragState(state)
@@ -266,10 +318,21 @@ export function GanttView() {
             }
           }
 
+          // ドラッグ元タスクを更新
           updateTaskFields(task.id, {
             [SYSTEM_FIELD_IDS.START_DATE]: format(newStart, 'yyyy-MM-dd'),
             [SYSTEM_FIELD_IDS.DUE_DATE]: format(newEnd, 'yyyy-MM-dd'),
           })
+
+          // バッチ対象も一括更新（move のみ）
+          if (m === 'move' && current.batchTargets) {
+            for (const bt of current.batchTargets) {
+              updateTaskFields(bt.id, {
+                [SYSTEM_FIELD_IDS.START_DATE]: format(addDays(bt.originalStart, dd), 'yyyy-MM-dd'),
+                [SYSTEM_FIELD_IDS.DUE_DATE]: format(addDays(bt.originalEnd, dd), 'yyyy-MM-dd'),
+              })
+            }
+          }
 
           return null
         })
@@ -278,13 +341,174 @@ export function GanttView() {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [updateTaskFields]
+    [updateTaskFields, selectedIds, sortedGanttTasks]
   )
 
-  if (sortedGanttTasks.length === 0) {
+  /** マーキー（範囲選択）ハンドラ — ガントバー領域の空白部分で発火 */
+  const handleMarqueeStart = useCallback(
+    (e: React.MouseEvent) => {
+      // バーやリサイズハンドルから来たイベントは無視
+      if (e.defaultPrevented) return
+      // 左ボタンのみ
+      if (e.button !== 0) return
+
+      const container = containerRef.current
+      if (!container) return
+
+      const rect = container.getBoundingClientRect()
+      const startX = e.clientX - rect.left + container.scrollLeft
+      const startY = e.clientY - rect.top + container.scrollTop
+
+      setMarquee({ startX, startY, currentX: startX, currentY: startY })
+      // Shift が押されていなければ既存選択をクリア
+      if (!e.shiftKey) {
+        setSelectedIds(new Set())
+      }
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const cx = moveEvent.clientX - rect.left + container.scrollLeft
+        const cy = moveEvent.clientY - rect.top + container.scrollTop
+        setMarquee((prev) => prev ? { ...prev, currentX: cx, currentY: cy } : null)
+      }
+
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+
+        const cx = upEvent.clientX - rect.left + container.scrollLeft
+        const cy = upEvent.clientY - rect.top + container.scrollTop
+
+        // マーキー矩形を計算
+        const selLeft = Math.min(startX, cx)
+        const selRight = Math.max(startX, cx)
+        const selTop = Math.min(startY, cy)
+        const selBottom = Math.max(startY, cy)
+
+        // 最低限の大きさ（小さすぎるドラッグは単なるクリック扱い → 選択解除）
+        const isRealDrag = (selRight - selLeft) > 4 || (selBottom - selTop) > 4
+
+        if (isRealDrag) {
+          const newSelected = new Set<string>(upEvent.shiftKey ? selectedIds : undefined)
+          sortedGanttTasks.forEach((gt, rowIndex) => {
+            const barStartOffset = differenceInDays(gt.start, minDate)
+            const barDuration = differenceInDays(gt.end, gt.start) + 1
+            // バーのピクセル位置（タスク名列分オフセット）
+            const barLeft = TASK_NAME_WIDTH + barStartOffset * DAY_WIDTH + 2
+            const barRight = barLeft + Math.max(barDuration * DAY_WIDTH - 4, 20)
+            const barTop = HEADER_HEIGHT + rowIndex * ROW_HEIGHT + 6
+            const barBottom = barTop + ROW_HEIGHT - 12
+
+            // 矩形の重なり判定
+            if (barRight > selLeft && barLeft < selRight && barBottom > selTop && barTop < selBottom) {
+              newSelected.add(gt.id)
+            }
+          })
+          setSelectedIds(newSelected)
+        } else if (!upEvent.shiftKey) {
+          // 単なるクリック → 選択解除
+          setSelectedIds(new Set())
+        }
+
+        setMarquee(null)
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    },
+    [sortedGanttTasks, minDate, selectedIds]
+  )
+
+  /** マーキー矩形の CSS 用ピクセル座標 */
+  const marqueeRect = useMemo(() => {
+    if (!marquee) return null
+    return {
+      left: Math.min(marquee.startX, marquee.currentX),
+      top: Math.min(marquee.startY, marquee.currentY),
+      width: Math.abs(marquee.currentX - marquee.startX),
+      height: Math.abs(marquee.currentY - marquee.startY),
+    }
+  }, [marquee])
+
+  /** ガントバー領域の空白ダブルクリック → インラインタスク作成 */
+  const handleChartDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // バー上のダブルクリックは無視（バーの onClick で詳細パネルが開く）
+      if (e.defaultPrevented) return
+
+      const container = containerRef.current
+      if (!container) return
+
+      const rect = container.getBoundingClientRect()
+      const clickX = e.clientX - rect.left + container.scrollLeft - TASK_NAME_WIDTH
+
+      // 日程領域外（タスク名列内）は無視
+      if (clickX < 0) return
+
+      const dayIndex = Math.floor(clickX / DAY_WIDTH)
+      const clickedDate = addDays(minDate, dayIndex)
+      const endDate = addDays(clickedDate, 3)
+
+      setInlineCreate({ startDate: clickedDate, endDate })
+      setInlineTitle('')
+      // 選択をクリア
+      setSelectedIds(new Set())
+    },
+    [minDate]
+  )
+
+  /** インラインタスク作成の確定 */
+  const handleInlineCreateConfirm = useCallback(() => {
+    if (!inlineCreate) return
+    const title = inlineTitle.trim()
+    if (!title) {
+      setInlineCreate(null)
+      return
+    }
+
+    const newTask = addTask({
+      [SYSTEM_FIELD_IDS.TITLE]: title,
+      [SYSTEM_FIELD_IDS.STATUS]: 'not_started',
+      [SYSTEM_FIELD_IDS.START_DATE]: format(inlineCreate.startDate, 'yyyy-MM-dd'),
+      [SYSTEM_FIELD_IDS.DUE_DATE]: format(inlineCreate.endDate, 'yyyy-MM-dd'),
+    })
+
+    setInlineCreate(null)
+    setInlineTitle('')
+    openDetailPanel(newTask.id)
+  }, [inlineCreate, inlineTitle, addTask, openDetailPanel])
+
+  /** インラインタスク作成のキャンセル */
+  const handleInlineCreateCancel = useCallback(() => {
+    setInlineCreate(null)
+    setInlineTitle('')
+  }, [])
+
+  /** + ボタン → 今日起点でインラインタスク作成 */
+  const handleAddTaskRow = useCallback(() => {
+    const today = startOfDay(new Date())
+    setInlineCreate({ startDate: today, endDate: addDays(today, 3) })
+    setInlineTitle('')
+  }, [])
+
+  /** インライン入力が表示されたらフォーカス */
+  useEffect(() => {
+    if (inlineCreate && inlineInputRef.current) {
+      inlineInputRef.current.focus()
+    }
+  }, [inlineCreate])
+
+  // 空状態 — ダブルクリックか + ボタンでタスク作成可能
+  if (sortedGanttTasks.length === 0 && !inlineCreate) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
-        {t.gantt.emptyMessage}
+      <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
+        <p>{t.gantt.emptyMessage}</p>
+        <button
+          onClick={handleAddTaskRow}
+          className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+        >
+          <Plus size={16} />
+          {t.common.newTask}
+        </button>
       </div>
     )
   }
@@ -304,8 +528,10 @@ export function GanttView() {
       )}
       <div className="h-full overflow-auto" ref={containerRef}>
       <div
-        style={{ width: 240 + totalDays * DAY_WIDTH, minHeight: '100%' }}
-        className={dragState ? 'select-none' : ''}
+        style={{ width: TASK_NAME_WIDTH + totalDays * DAY_WIDTH, minHeight: '100%' }}
+        className={(dragState || marquee) ? 'select-none' : ''}
+        onMouseDown={handleMarqueeStart}
+        onDoubleClick={handleChartDoubleClick}
       >
         {/* ヘッダー */}
         <div className="sticky top-0 z-10 flex border-b border-border bg-background">
@@ -362,6 +588,8 @@ export function GanttView() {
           const duration = differenceInDays(end, start) + 1
           const barWidth = Math.max(duration * DAY_WIDTH - 4, 20)
           const isDragging = dragState?.taskId === task.id
+          const isBatchTarget = !!(dragState?.batchTargets?.some((b) => b.id === task.id))
+          const isSelected = selectedIds.has(task.id)
           const sourceTask = tasks.find(t => t.id === task.id)
           const taskStatus = (sourceTask?.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string) ?? ''
 
@@ -370,7 +598,8 @@ export function GanttView() {
               key={task.id}
               className={cn(
                 'flex border-b border-border',
-                fadingTaskIds.has(task.id) && 'animate-check-row-fade'
+                fadingTaskIds.has(task.id) && 'animate-check-row-fade',
+                isSelected && !dragState && 'bg-primary/5',
               )}
               style={{ height: ROW_HEIGHT }}
             >
@@ -412,15 +641,20 @@ export function GanttView() {
                 )}
                 {/* バー */}
                 <div
-                  className={`absolute top-1.5 flex items-center rounded-md text-xs text-white shadow-sm transition-opacity group ${
-                    isDragging ? 'opacity-80 ring-2 ring-primary/50' : 'hover:opacity-90'
-                  }`}
+                  className={cn(
+                    'absolute top-1.5 flex items-center rounded-md text-xs text-white shadow-sm transition-opacity group',
+                    isDragging || isBatchTarget
+                      ? 'opacity-80 ring-2 ring-primary/50'
+                      : isSelected
+                        ? 'ring-2 ring-primary/70 hover:opacity-90'
+                        : 'hover:opacity-90',
+                  )}
                   style={{
                     left: startOffset * DAY_WIDTH + 2,
                     width: barWidth,
                     height: ROW_HEIGHT - 12,
                     backgroundColor: sanitizeColor(task.color),
-                    cursor: isDragging ? 'grabbing' : 'grab',
+                    cursor: isDragging || isBatchTarget ? 'grabbing' : 'grab',
                   }}
                   title={`${task.title} (${format(start, 'M/d')} 〜 ${format(end, 'M/d')})`}
                   onMouseDown={(e) => handleDragStart(e, task, 'move')}
@@ -455,7 +689,7 @@ export function GanttView() {
                 </div>
 
                 {/* ドラッグ中の日付ツールチップ */}
-                {isDragging && dragState.daysDelta !== 0 && (
+                {(isDragging || isBatchTarget) && dragState && dragState.daysDelta !== 0 && (
                   <div
                     className="absolute z-30 rounded bg-foreground/90 px-2 py-0.5 text-[10px] text-background whitespace-nowrap pointer-events-none"
                     style={{
@@ -470,8 +704,125 @@ export function GanttView() {
             </div>
           )
         })}
+
+        {/* インラインタスク作成行 */}
+        {inlineCreate && (
+          <div className="flex border-b border-border bg-primary/5" style={{ height: ROW_HEIGHT }}>
+            {/* タスク名入力 */}
+            <div
+              className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3"
+              style={{ height: ROW_HEIGHT }}
+            >
+              <div className="flex-shrink-0 mr-2 w-5" />
+              <input
+                ref={inlineInputRef}
+                type="text"
+                value={inlineTitle}
+                onChange={(e) => setInlineTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleInlineCreateConfirm()
+                  } else if (e.key === 'Escape') {
+                    handleInlineCreateCancel()
+                  }
+                }}
+                onBlur={() => {
+                  // 少し遅延して blur 時に確定（空なら消える）
+                  setTimeout(() => handleInlineCreateConfirm(), 150)
+                }}
+                placeholder={t.gantt.taskNamePlaceholder}
+                className="flex-1 bg-transparent text-sm outline-none border-b-2 border-primary/50 py-0.5 placeholder:text-muted-foreground/50"
+              />
+            </div>
+            {/* プレビューバー */}
+            <div className="relative flex-1">
+              {/* 今日線 */}
+              {todayOffset >= 0 && todayOffset < totalDays && (
+                <div
+                  className="absolute top-0 h-full w-px bg-primary/50"
+                  style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                />
+              )}
+              {(() => {
+                const previewStart = differenceInDays(inlineCreate.startDate, minDate)
+                const previewDuration = differenceInDays(inlineCreate.endDate, inlineCreate.startDate) + 1
+                const previewWidth = Math.max(previewDuration * DAY_WIDTH - 4, 20)
+                return (
+                  <div
+                    className="absolute top-1.5 flex items-center rounded-md text-xs text-white/80 shadow-sm border-2 border-dashed border-primary/60"
+                    style={{
+                      left: previewStart * DAY_WIDTH + 2,
+                      width: previewWidth,
+                      height: ROW_HEIGHT - 12,
+                      backgroundColor: 'var(--color-primary)',
+                      opacity: 0.4,
+                    }}
+                  >
+                    <span className="relative z-10 truncate px-3 text-primary-foreground">
+                      {format(inlineCreate.startDate, 'M/d')} 〜 {format(inlineCreate.endDate, 'M/d')}
+                    </span>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* ＋ 新規タスク追加行 */}
+        {!inlineCreate && (
+          <div className="flex border-b border-border/50" style={{ height: ROW_HEIGHT }}>
+            <div
+              className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background"
+              style={{ height: ROW_HEIGHT }}
+            >
+              <button
+                onClick={handleAddTaskRow}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+              >
+                <Plus size={14} />
+                {t.common.newTask}
+              </button>
+            </div>
+            <div className="relative flex-1">
+              {/* 今日線 */}
+              {todayOffset >= 0 && todayOffset < totalDays && (
+                <div
+                  className="absolute top-0 h-full w-px bg-primary/50"
+                  style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* マーキー（範囲選択）矩形 */}
+        {marqueeRect && (
+          <div
+            className="absolute border-2 border-primary/60 bg-primary/10 rounded pointer-events-none z-40"
+            style={{
+              left: marqueeRect.left,
+              top: marqueeRect.top,
+              width: marqueeRect.width,
+              height: marqueeRect.height,
+            }}
+          />
+        )}
       </div>
     </div>
+
+    {/* 選択中のタスク数バッジ */}
+    {selectedIds.size > 1 && (
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-primary-foreground text-xs font-medium shadow-lg">
+        {selectedIds.size}{t.gantt.selectedCount}
+        <button
+          onClick={() => setSelectedIds(new Set())}
+          className="ml-1 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] hover:bg-primary-foreground/30 transition-colors"
+        >
+          {t.gantt.clearSelection}
+        </button>
+      </div>
+    )}
     </div>
   )
 }

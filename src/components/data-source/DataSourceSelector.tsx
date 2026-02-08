@@ -6,6 +6,7 @@ import { useI18n } from '@/i18n'
 import { LocalFileAdapter } from '@/adapters/local-file-adapter'
 import { MemoryAdapter } from '@/adapters/memory-adapter'
 import { writeExcel } from '@/lib/excel/writer'
+import { fileSave } from 'browser-fs-access'
 import { FolderOpen, Database, FileSpreadsheet, FileJson, Loader2, Save } from 'lucide-react'
 
 export function DataSourceSelector() {
@@ -69,7 +70,7 @@ export function DataSourceSelector() {
     }
   }, [adapter, connection, getDataSet, markClean, setLastSaved, setStatus, setError, addToast])
 
-  // JSONとして保存（新規ダウンロード）
+  // JSONとして保存（fileSave経由。初回はピッカー、以降は上書き）
   const handleSaveJson = useCallback(async () => {
     try {
       setSaving(true)
@@ -78,26 +79,49 @@ export function DataSourceSelector() {
       data.metadata.source = 'local'
       const json = JSON.stringify(data, null, 2)
       const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'tasks.json'
-      a.click()
-      URL.revokeObjectURL(url)
+
+      // 同じ形式（.json）で開いている場合のみ上書き候補にする
+      const existingHandle =
+        hasOpenFile && connection?.name.endsWith('.json')
+          ? connection.fileHandle ?? undefined
+          : undefined
+
+      const newHandle = await fileSave(
+        blob,
+        {
+          fileName: existingHandle ? connection!.name : 'tasks.json',
+          extensions: ['.json'],
+          description: 'JSONファイル',
+        },
+        existingHandle,
+      )
+
+      // 新規保存で handle を取得できた場合、アダプタと接続を更新
+      if (newHandle && newHandle !== existingHandle) {
+        const name = (newHandle as unknown as { name?: string }).name ?? 'tasks.json'
+        const newAdapter = LocalFileAdapter.fromHandle(newHandle, name, 'json')
+        setAdapter(newAdapter)
+        setConnection({ type: 'local', name, fileHandle: newHandle })
+      }
+
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
       addToast(t.data.savedJson, 'success')
     } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        setStatus(hasOpenFile ? 'connected' : 'disconnected')
+        return
+      }
       const msg = String((err as Error).message ?? t.data.saveFailed)
       setError(msg)
       addToast(msg, 'error')
     } finally {
       setSaving(false)
     }
-  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast])
+  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
 
-  // Excelとして保存（新規ダウンロード）
+  // Excelとして保存（fileSave経由。初回はピッカー、以降は上書き）
   const handleSaveExcel = useCallback(async () => {
     try {
       setSaving(true)
@@ -108,24 +132,47 @@ export function DataSourceSelector() {
       const blob = new Blob([excelData.buffer as ArrayBuffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'tasks.xlsx'
-      a.click()
-      URL.revokeObjectURL(url)
+
+      // 同じ形式（.xlsx）で開いている場合のみ上書き候補にする
+      const existingHandle =
+        hasOpenFile && connection?.name.endsWith('.xlsx')
+          ? connection.fileHandle ?? undefined
+          : undefined
+
+      const newHandle = await fileSave(
+        blob,
+        {
+          fileName: existingHandle ? connection!.name : 'tasks.xlsx',
+          extensions: ['.xlsx'],
+          description: 'Excelファイル',
+        },
+        existingHandle,
+      )
+
+      // 新規保存で handle を取得できた場合、アダプタと接続を更新
+      if (newHandle && newHandle !== existingHandle) {
+        const name = (newHandle as unknown as { name?: string }).name ?? 'tasks.xlsx'
+        const newAdapter = LocalFileAdapter.fromHandle(newHandle, name, 'xlsx')
+        setAdapter(newAdapter)
+        setConnection({ type: 'local', name, fileHandle: newHandle })
+      }
+
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
       addToast(t.data.savedExcel, 'success')
     } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        setStatus(hasOpenFile ? 'connected' : 'disconnected')
+        return
+      }
       const msg = String((err as Error).message ?? t.data.saveFailed)
       setError(msg)
       addToast(msg, 'error')
     } finally {
       setSaving(false)
     }
-  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast])
+  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
 
   // デモデータに戻す
   const handleLoadDemo = useCallback(async () => {

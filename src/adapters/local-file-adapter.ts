@@ -111,4 +111,21 @@ export class LocalFileAdapter implements DataAdapter {
   getLastSaved(): Date | null {
     return this.savedAt
   }
+
+  /**
+   * 既存の FileSystemFileHandle からアダプタを生成する。
+   * fileSave で新しく handle を取得した場合などに使用。
+   */
+  static fromHandle(
+    handle: FileSystemFileHandle,
+    fileName: string,
+    fileType: 'json' | 'xlsx',
+  ): LocalFileAdapter {
+    const adapter = new LocalFileAdapter()
+    adapter.fileHandle = handle
+    adapter.fileName = fileName
+    adapter.fileType = fileType
+    adapter.connected = true
+    return adapter
+  }
 }

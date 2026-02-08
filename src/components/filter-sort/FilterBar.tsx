@@ -191,13 +191,13 @@ export function FilterBar() {
 
       {/* 日付範囲フィルター */}
       <div className="flex items-center rounded-md border border-border bg-background text-xs">
-        <span className="flex items-center pl-2 text-muted-foreground">
+        <span className="flex items-center px-2 text-muted-foreground">
           <CalendarDays size={13} />
         </span>
         <button
           onClick={setThisWeek}
           className={cn(
-            'px-2 py-1 transition-colors border-l border-border',
+            'px-2 py-1 transition-colors',
             activeDateRange === 'this-week'
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-accent hover:text-foreground'
