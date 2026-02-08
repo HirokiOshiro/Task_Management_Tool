@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { sanitizeUrl, sanitizeColor } from '@/lib/sanitize'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
+import type { Locale } from '@/i18n/locales/ja'
 
 export function TableView() {
   const { addTask, deleteTask, updateTask, updateField } = useTaskStore()
@@ -96,43 +97,15 @@ export function TableView() {
         </thead>
         <tbody>
           {sortedTasks.map((task) => (
-            <tr
+            <TaskRow
               key={task.id}
-              className="group border-b border-border hover:bg-muted/30 transition-colors"
-            >
-              {/* 行操作 */}
-              <td className="px-2 py-1">
-                <div className="flex items-center gap-0.5">
-                  {/* 完了チェックボックス */}
-                  <TaskCheckButton
-                    taskId={task.id}
-                    status={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string}
-                  />
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
-                    title={t.table.deleteTask}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </td>
-              {visibleFields.map((field) => (
-                <td key={field.id} className="px-3 py-1.5">
-                  <EditableCell
-                    taskId={task.id}
-                    field={field}
-                    value={task.fieldValues[field.id]}
-                    onUpdate={updateTask}
-                    onOpenDetail={
-                      field.id === SYSTEM_FIELD_IDS.TITLE
-                        ? () => openDetailPanel(task.id)
-                        : undefined
-                    }
-                  />
-                </td>
-              ))}
-            </tr>
+              task={task}
+              visibleFields={visibleFields}
+              updateTask={updateTask}
+              deleteTask={deleteTask}
+              openDetailPanel={openDetailPanel}
+              t={t}
+            />
           ))}
           {/* 新規行追加 */}
           <tr>
@@ -149,6 +122,68 @@ export function TableView() {
         </tbody>
       </table>
     </div>
+  )
+}
+
+/** テーブル行（完了フェードアウト対応） */
+function TaskRow({
+  task,
+  visibleFields,
+  updateTask,
+  deleteTask,
+  openDetailPanel,
+  t,
+}: {
+  task: Task
+  visibleFields: FieldDefinition[]
+  updateTask: (taskId: string, fieldId: string, value: unknown) => void
+  deleteTask: (taskId: string) => void
+  openDetailPanel: (taskId: string) => void
+  t: Locale
+}) {
+  const [fadingOut, setFadingOut] = useState(false)
+
+  return (
+    <tr
+      className={cn(
+        'group border-b border-border hover:bg-muted/30 transition-colors',
+        fadingOut && 'animate-check-row-fade'
+      )}
+    >
+      {/* 行操作 */}
+      <td className="px-2 py-1">
+        <div className="flex items-center gap-0.5">
+          {/* 完了チェックボックス */}
+          <TaskCheckButton
+            taskId={task.id}
+            status={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string}
+            onBeforeComplete={() => setFadingOut(true)}
+          />
+          <button
+            onClick={() => deleteTask(task.id)}
+            className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+            title={t.table.deleteTask}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </td>
+      {visibleFields.map((field) => (
+        <td key={field.id} className="px-3 py-1.5">
+          <EditableCell
+            taskId={task.id}
+            field={field}
+            value={task.fieldValues[field.id]}
+            onUpdate={updateTask}
+            onOpenDetail={
+              field.id === SYSTEM_FIELD_IDS.TITLE
+                ? () => openDetailPanel(task.id)
+                : undefined
+            }
+          />
+        </td>
+      ))}
+    </tr>
   )
 }
 

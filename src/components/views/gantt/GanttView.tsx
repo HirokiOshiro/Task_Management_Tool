@@ -19,6 +19,7 @@ import { enUS } from 'date-fns/locale'
 import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
 import { CalendarDays } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 
 const DAY_WIDTH = 32
@@ -53,6 +54,7 @@ export function GanttView() {
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
 
   const [dragState, setDragState] = useState<DragState | null>(null)
+  const [fadingTaskIds, setFadingTaskIds] = useState<Set<string>>(new Set())
   const containerRef = useRef<HTMLDivElement>(null)
   const { t, lang } = useI18n()
   const dateFnsLocale = lang === 'ja' ? ja : enUS
@@ -364,7 +366,14 @@ export function GanttView() {
           const taskStatus = (sourceTask?.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string) ?? ''
 
           return (
-            <div key={task.id} className="flex border-b border-border" style={{ height: ROW_HEIGHT }}>
+            <div
+              key={task.id}
+              className={cn(
+                'flex border-b border-border',
+                fadingTaskIds.has(task.id) && 'animate-check-row-fade'
+              )}
+              style={{ height: ROW_HEIGHT }}
+            >
               {/* タスク名 */}
               <div
                 className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3 text-sm group/name"
@@ -376,6 +385,7 @@ export function GanttView() {
                     taskId={task.id}
                     status={taskStatus}
                     onClick={(e) => e.stopPropagation()}
+                    onBeforeComplete={() => setFadingTaskIds((prev) => new Set(prev).add(task.id))}
                   />
                 </div>
                 {/* タスク名 */}
