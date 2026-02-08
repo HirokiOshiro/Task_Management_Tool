@@ -519,7 +519,8 @@ export function GanttView() {
       {todayOffset >= 0 && (
         <button
           onClick={scrollToToday}
-          className="absolute top-2 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
+          className="absolute right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
+          style={{ top: HEADER_HEIGHT + 8 }}
           title={t.gantt.scrollToToday}
         >
           <CalendarDays size={14} />
