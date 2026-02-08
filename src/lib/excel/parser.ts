@@ -133,7 +133,7 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
 }
 
 /** ヘッダーとデータからフィールド定義を推論 */
-function inferFieldsFromHeaders(
+export function inferFieldsFromHeaders(
   headers: string[],
   dataRows: unknown[][]
 ): FieldDefinition[] {
@@ -252,7 +252,7 @@ function isValidViewConfig(raw: unknown): raw is ViewConfig {
 }
 
 /** セル値をフィールド型に変換 */
-function parseValue(raw: unknown, field: FieldDefinition): unknown {
+export function parseValue(raw: unknown, field: FieldDefinition): unknown {
   if (raw == null || raw === '') return undefined
 
   switch (field.type) {
@@ -281,4 +281,75 @@ function parseValue(raw: unknown, field: FieldDefinition): unknown {
     default:
       return String(raw)
   }
+}
+
+/**
+ * インポート用: Excel/CSVファイルからタスク配列とフィールド定義を返す。
+ * _FieldDefs / _ViewConfigs は無視し、データ行だけを解析する。
+ */
+export function parseImportFile(
+  data: ArrayBuffer,
+  existingFields: FieldDefinition[],
+): { tasks: Task[]; fields: FieldDefinition[] } {
+  const workbook = XLSX.read(data, { type: 'array', cellDates: true })
+
+  // メインシートを探す（_で始まるメタシートは除外）
+  const mainSheetName =
+    workbook.SheetNames.includes('Tasks')
+      ? 'Tasks'
+      : workbook.SheetNames.find((n) => !n.startsWith('_')) ?? workbook.SheetNames[0]
+  const mainSheet = workbook.Sheets[mainSheetName]
+  if (!mainSheet) return { tasks: [], fields: [] }
+
+  const rows: unknown[][] = XLSX.utils.sheet_to_json(mainSheet, {
+    header: 1,
+    raw: false,
+    dateNF: 'yyyy-mm-dd',
+  })
+  if (rows.length < 2) return { tasks: [], fields: [] }
+
+  const headers = (rows[0] as string[]).map((h) => String(h ?? '').trim())
+  const dataRows = rows.slice(1)
+
+  // 既存フィールド + 推論フィールドからマッピングを構築
+  const inferred = inferFieldsFromHeaders(headers, dataRows)
+
+  // ヘッダー → フィールドIDマップ（既存フィールドを優先）
+  const headerToField = new Map<number, FieldDefinition>()
+  const newFields: FieldDefinition[] = []
+
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i]
+    // 既存フィールドに名前一致があればそちらを使う
+    const existing = existingFields.find((f) => f.name === header)
+    if (existing) {
+      headerToField.set(i, existing)
+    } else {
+      const inf = inferred[i]
+      if (inf) {
+        headerToField.set(i, inf)
+        newFields.push(inf)
+      }
+    }
+  }
+
+  // タスク構築
+  const tasks: Task[] = []
+  for (const row of dataRows) {
+    if (!row || (row as unknown[]).every((c) => c == null || c === '')) continue
+    const fieldValues: Record<string, unknown> = {}
+    for (let colIdx = 0; colIdx < (row as unknown[]).length; colIdx++) {
+      const field = headerToField.get(colIdx)
+      if (!field) continue
+      fieldValues[field.id] = parseValue((row as unknown[])[colIdx], field)
+    }
+    tasks.push({
+      id: generateId(),
+      fieldValues,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+  }
+
+  return { tasks, fields: newFields }
 }

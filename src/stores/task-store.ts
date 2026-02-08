@@ -26,6 +26,9 @@ interface TaskState {
   deleteField: (fieldId: string) => void
   reorderFields: (fieldIds: string[]) => void
 
+  // インポート
+  importTasks: (tasks: Task[], fields: FieldDefinition[], mode: 'append' | 'replace') => void
+
   // データセット操作
   loadDataSet: (dataSet: TaskDataSet) => void
   getDataSet: () => TaskDataSet
@@ -150,6 +153,37 @@ export const useTaskStore = create<TaskState>()(
             field.order = i
           }
         }
+        state.isDirty = true
+      })
+    },
+
+    importTasks: (newTasks, newFields, mode) => {
+      set((state) => {
+        // ID を再生成して重複を防ぐ
+        const remapped = newTasks.map((t) => ({
+          ...t,
+          id: generateId(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }))
+
+        if (mode === 'replace') {
+          state.tasks = remapped
+        } else {
+          state.tasks.push(...remapped)
+        }
+
+        // 新しいフィールド定義をマージ（既存にないものだけ追加）
+        const existingIds = new Set(state.fields.map((f) => f.id))
+        const existingNames = new Set(state.fields.map((f) => f.name))
+        let maxOrder = state.fields.reduce((m, f) => Math.max(m, f.order), -1)
+        for (const nf of newFields) {
+          if (!existingIds.has(nf.id) && !existingNames.has(nf.name)) {
+            maxOrder++
+            state.fields.push({ ...nf, order: maxOrder })
+          }
+        }
+
         state.isDirty = true
       })
     },

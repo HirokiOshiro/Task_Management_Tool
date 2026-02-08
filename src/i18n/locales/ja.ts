@@ -205,6 +205,18 @@ export const ja = {
     loadedDemo: 'デモデータを読み込みました',
     demoDataTitle: 'デモデータ',
     noFileToSave: '保存するファイルがありません',
+    importTasks: 'タスクをインポート',
+    importTemplate: 'テンプレートをダウンロード',
+    importAppend: '既存に追加',
+    importReplace: '全て置換',
+    importSuccess: (count: number) => `${count} 件のタスクをインポートしました`,
+    importFailed: 'インポートに失敗しました',
+    importPreview: 'インポートプレビュー',
+    importPreviewInfo: (count: number, fieldCount: number) =>
+      `${count} 件のタスク、${fieldCount} 個のフィールドが見つかりました`,
+    importConfirm: 'インポート実行',
+    importCancel: 'キャンセル',
+    supportedFormats: '対応形式: .xlsx, .csv',
   },
 
   // ── Help Guide ──
@@ -424,6 +436,17 @@ export type Locale = {
     loadedDemo: string
     noFileToSave: string
     demoDataTitle: string
+    importTasks: string
+    importTemplate: string
+    importAppend: string
+    importReplace: string
+    importSuccess: (count: number) => string
+    importFailed: string
+    importPreview: string
+    importPreviewInfo: (count: number, fieldCount: number) => string
+    importConfirm: string
+    importCancel: string
+    supportedFormats: string
   }
   help: {
     title: string

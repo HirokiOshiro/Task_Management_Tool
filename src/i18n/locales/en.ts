@@ -207,6 +207,18 @@ export const en: Locale = {
     loadedDemo: 'Demo data loaded',
     demoDataTitle: 'Demo Data',
     noFileToSave: 'No file to save',
+    importTasks: 'Import Tasks',
+    importTemplate: 'Download Template',
+    importAppend: 'Append to existing',
+    importReplace: 'Replace all',
+    importSuccess: (count: number) => `Imported ${count} task(s)`,
+    importFailed: 'Import failed',
+    importPreview: 'Import Preview',
+    importPreviewInfo: (count: number, fieldCount: number) =>
+      `Found ${count} task(s) and ${fieldCount} field(s)`,
+    importConfirm: 'Import',
+    importCancel: 'Cancel',
+    supportedFormats: 'Supported: .xlsx, .csv',
   },
 
   // ── Help Guide ──
