@@ -515,12 +515,12 @@ export function GanttView() {
 
   return (
     <div className="relative h-full">
-      {/* 今日ボタン（フローティング） */}
+      {/* 今日ボタン（ヘッダー右上にフローティング） */}
       {todayOffset >= 0 && (
         <button
           onClick={scrollToToday}
-          className="absolute right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
-          style={{ top: HEADER_HEIGHT + 8 }}
+          className="absolute right-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
+          style={{ top: (MONTH_HEADER_HEIGHT - 24) / 2 + 2 }}
           title={t.gantt.scrollToToday}
         >
           <CalendarDays size={14} />

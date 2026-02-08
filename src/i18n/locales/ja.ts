@@ -206,7 +206,7 @@ export const ja = {
     demoDataTitle: 'デモデータ',
     noFileToSave: '保存するファイルがありません',
     importTasks: 'タスクをインポート',
-    importTemplate: 'テンプレートをダウンロード',
+    importTemplate: 'テンプレートダウンロード',
     importAppend: '既存に追加',
     importReplace: '全て置換',
     importSuccess: (count: number) => `${count} 件のタスクをインポートしました`,
