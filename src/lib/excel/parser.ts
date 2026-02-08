@@ -157,6 +157,8 @@ function inferFieldsFromHeaders(
     'Progress': { id: 'progress', type: 'progress' },
     '開始日': { id: 'start_date', type: 'date' },
     'Start Date': { id: 'start_date', type: 'date' },
+    '業務': { id: 'category', type: 'select' },
+    'Category': { id: 'category', type: 'select' },
   }
 
   const defaults = createDefaultFields()

@@ -18,6 +18,8 @@ import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
 import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
+import { Check, CalendarDays } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const DAY_WIDTH = 32
 const ROW_HEIGHT = 36
@@ -153,6 +155,17 @@ export function GanttView() {
     return headers
   }, [days])
 
+  // 今日の位置にスクロールする関数
+  const scrollToToday = useCallback(() => {
+    if (containerRef.current && todayOffset >= 0) {
+      const scrollLeft = todayOffset * DAY_WIDTH - containerRef.current.clientWidth / 2 + 240
+      containerRef.current.scrollTo({
+        left: Math.max(0, scrollLeft),
+        behavior: 'smooth',
+      })
+    }
+  }, [todayOffset])
+
   // 初回マウント時に今日の位置にスクロール
   useEffect(() => {
     if (containerRef.current && todayOffset >= 0) {
@@ -275,7 +288,19 @@ export function GanttView() {
   }
 
   return (
-    <div className="h-full overflow-auto" ref={containerRef}>
+    <div className="relative h-full">
+      {/* 今日ボタン（フローティング） */}
+      {todayOffset >= 0 && (
+        <button
+          onClick={scrollToToday}
+          className="absolute top-2 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
+          title={t.gantt.scrollToToday}
+        >
+          <CalendarDays size={14} />
+          {t.common.today}
+        </button>
+      )}
+      <div className="h-full overflow-auto" ref={containerRef}>
       <div
         style={{ width: 240 + totalDays * DAY_WIDTH, minHeight: '100%' }}
         className={dragState ? 'select-none' : ''}
@@ -339,10 +364,37 @@ export function GanttView() {
             <div key={task.id} className="flex border-b border-border" style={{ height: ROW_HEIGHT }}>
               {/* タスク名 */}
               <div
-                className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3 text-sm truncate cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => openDetailPanel(task.id)}
+                className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3 text-sm group/name"
+                style={{ height: ROW_HEIGHT }}
               >
-                {task.title}
+                {/* 完了チェックボックス */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const status = tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string
+                    if (status !== 'done') {
+                      updateTaskFields(task.id, { [SYSTEM_FIELD_IDS.STATUS]: 'done' })
+                    }
+                  }}
+                  className={cn(
+                    'flex-shrink-0 mr-2 w-4 h-4 rounded border transition-colors flex items-center justify-center',
+                    tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
+                      ? 'bg-green-500 border-green-500 text-white'
+                      : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/10'
+                  )}
+                  title={t.gantt.markDone}
+                >
+                  {tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done' && (
+                    <Check size={10} strokeWidth={3} />
+                  )}
+                </button>
+                {/* タスク名 */}
+                <div
+                  className="flex-1 truncate cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => openDetailPanel(task.id)}
+                >
+                  {task.title}
+                </div>
               </div>
               {/* ガントバー領域 */}
               <div className="relative flex-1">
@@ -414,6 +466,7 @@ export function GanttView() {
           )
         })}
       </div>
+    </div>
     </div>
   )
 }

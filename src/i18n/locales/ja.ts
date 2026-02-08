@@ -41,6 +41,7 @@ export const ja = {
     startDate: '開始日',
     dependencies: '依存関係',
     notes: 'メモ',
+    category: '業務',
   },
 
   // ── Status Options ──
@@ -106,6 +107,10 @@ export const ja = {
     showAll: '全て',
     hideDoneTitle: '完了タスクを非表示',
     showAllTitle: '全タスクを表示',
+    thisWeek: '今週',
+    thisMonth: '今月',
+    nextTwoMonths: '2カ月',
+    clearDateFilter: '日付フィルターをクリア',
     selectField: 'フィールドを選択...',
     valuePlaceholder: '値...',
     operators: {
@@ -165,6 +170,8 @@ export const ja = {
     emptyMessage: 'ガントチャートを表示するにはタスクに開始日または期限を設定してください。',
     taskName: 'タスク名',
     monthFormat: 'yyyy年M月',
+    markDone: '完了にする',
+    scrollToToday: '今日の位置にスクロール',
   },
 
   // ── Calendar View ──
@@ -180,16 +187,21 @@ export const ja = {
     taskDataFile: 'タスクデータファイル',
     noFileConnected: 'ファイルが接続されていません',
     openFile: 'ファイルを開く',
+    save: '上書き保存',
     saveJson: 'JSONで保存',
+    saveAsJson: '別名でJSON保存',
     saveExcel: 'Excelで保存',
+    saveAsExcel: '別名でExcel保存',
     demoData: 'デモデータ',
     loadedFile: (name: string) => `${name} を読み込みました`,
     loadFailed: 'ファイルの読み込みに失敗しました',
+    savedFile: (name: string) => `${name} を保存しました`,
     savedJson: 'JSONファイルを保存しました',
     saveFailed: '保存に失敗しました',
     savedExcel: 'Excelファイルを保存しました',
     loadedDemo: 'デモデータを読み込みました',
     demoDataTitle: 'デモデータ',
+    noFileToSave: '保存するファイルがありません',
   },
 
   // ── Help Guide ──
@@ -340,6 +352,10 @@ export type Locale = {
     showAll: string
     hideDoneTitle: string
     showAllTitle: string
+    thisWeek: string
+    thisMonth: string
+    nextTwoMonths: string
+    clearDateFilter: string
     selectField: string
     valuePlaceholder: string
     operators: Record<string, string>
@@ -374,6 +390,8 @@ export type Locale = {
     emptyMessage: string
     taskName: string
     monthFormat: string
+    markDone: string
+    scrollToToday: string
   }
   calendar: {
     monthFormat: string
@@ -385,15 +403,20 @@ export type Locale = {
     taskDataFile: string
     noFileConnected: string
     openFile: string
+    save: string
     saveJson: string
+    saveAsJson: string
     saveExcel: string
+    saveAsExcel: string
     demoData: string
     loadedFile: (name: string) => string
     loadFailed: string
+    savedFile: (name: string) => string
     savedJson: string
     saveFailed: string
     savedExcel: string
     loadedDemo: string
+    noFileToSave: string
     demoDataTitle: string
   }
   help: {

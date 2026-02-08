@@ -43,6 +43,7 @@ export const en: Locale = {
     startDate: 'Start Date',
     dependencies: 'Dependencies',
     notes: 'Notes',
+    category: 'Category',
   },
 
   // ── Status Options ──
@@ -108,6 +109,10 @@ export const en: Locale = {
     showAll: 'All',
     hideDoneTitle: 'Hide done tasks',
     showAllTitle: 'Show all tasks',
+    thisWeek: 'Week',
+    thisMonth: 'Month',
+    nextTwoMonths: '2 Mon.',
+    clearDateFilter: 'Clear date filter',
     selectField: 'Select field...',
     valuePlaceholder: 'Value...',
     operators: {
@@ -167,6 +172,8 @@ export const en: Locale = {
     emptyMessage: 'Set a start date or due date on tasks to display the Gantt chart.',
     taskName: 'Task Name',
     monthFormat: 'MMM yyyy',
+    markDone: 'Mark as done',
+    scrollToToday: 'Scroll to today',
   },
 
   // ── Calendar View ──
@@ -182,16 +189,21 @@ export const en: Locale = {
     taskDataFile: 'Task Data File',
     noFileConnected: 'No file connected',
     openFile: 'Open File',
+    save: 'Save',
     saveJson: 'Save as JSON',
+    saveAsJson: 'Save as JSON (New)',
     saveExcel: 'Save as Excel',
+    saveAsExcel: 'Save as Excel (New)',
     demoData: 'Demo Data',
     loadedFile: (name: string) => `Loaded ${name}`,
     loadFailed: 'Failed to load file',
+    savedFile: (name: string) => `Saved ${name}`,
     savedJson: 'Saved as JSON',
     saveFailed: 'Failed to save',
     savedExcel: 'Saved as Excel',
     loadedDemo: 'Demo data loaded',
     demoDataTitle: 'Demo Data',
+    noFileToSave: 'No file to save',
   },
 
   // ── Help Guide ──
