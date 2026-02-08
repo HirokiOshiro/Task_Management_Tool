@@ -13,6 +13,8 @@ export const ja = {
     items: '件',
     today: '今日',
     newTask: '新規タスク',
+    markDone: '完了にする',
+    markInProgress: '進行中に戻す',
   },
 
   // ── Field Types ──
@@ -154,8 +156,6 @@ export const ja = {
 
   // ── Table View ──
   table: {
-    markDone: '完了にする',
-    markInProgress: '進行中に戻す',
     deleteTask: 'タスクを削除',
     enterToAdd: '入力してEnter...',
   },
@@ -170,7 +170,6 @@ export const ja = {
     emptyMessage: 'ガントチャートを表示するにはタスクに開始日または期限を設定してください。',
     taskName: 'タスク名',
     monthFormat: 'yyyy年M月',
-    markDone: '完了にする',
     scrollToToday: '今日の位置にスクロール',
   },
 
@@ -311,6 +310,8 @@ export type Locale = {
     items: string
     today: string
     newTask: string
+    markDone: string
+    markInProgress: string
   }
   fieldTypes: Record<string, string>
   fieldNames: Record<string, string>
@@ -380,8 +381,6 @@ export type Locale = {
     tagsPlaceholder: string
   }
   table: {
-    markDone: string
-    markInProgress: string
     deleteTask: string
     enterToAdd: string
   }
@@ -390,7 +389,6 @@ export type Locale = {
     emptyMessage: string
     taskName: string
     monthFormat: string
-    markDone: string
     scrollToToday: string
   }
   calendar: {

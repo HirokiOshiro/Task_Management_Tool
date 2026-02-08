@@ -18,8 +18,8 @@ import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
 import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n } from '@/i18n'
-import { Check, CalendarDays } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { CalendarDays } from 'lucide-react'
+import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 
 const DAY_WIDTH = 32
 const ROW_HEIGHT = 36
@@ -359,6 +359,8 @@ export function GanttView() {
           const duration = differenceInDays(end, start) + 1
           const barWidth = Math.max(duration * DAY_WIDTH - 4, 20)
           const isDragging = dragState?.taskId === task.id
+          const sourceTask = tasks.find(t => t.id === task.id)
+          const taskStatus = (sourceTask?.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string) ?? ''
 
           return (
             <div key={task.id} className="flex border-b border-border" style={{ height: ROW_HEIGHT }}>
@@ -368,26 +370,13 @@ export function GanttView() {
                 style={{ height: ROW_HEIGHT }}
               >
                 {/* 完了チェックボックス */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const status = tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string
-                    if (status !== 'done') {
-                      updateTaskFields(task.id, { [SYSTEM_FIELD_IDS.STATUS]: 'done' })
-                    }
-                  }}
-                  className={cn(
-                    'flex-shrink-0 mr-2 w-4 h-4 rounded border transition-colors flex items-center justify-center',
-                    tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
-                      ? 'bg-green-500 border-green-500 text-white'
-                      : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/10'
-                  )}
-                  title={t.gantt.markDone}
-                >
-                  {tasks.find(t => t.id === task.id)?.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done' && (
-                    <Check size={10} strokeWidth={3} />
-                  )}
-                </button>
+                <div className="flex-shrink-0 mr-2">
+                  <TaskCheckButton
+                    taskId={task.id}
+                    status={taskStatus}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
                 {/* タスク名 */}
                 <div
                   className="flex-1 truncate cursor-pointer hover:text-primary transition-colors"

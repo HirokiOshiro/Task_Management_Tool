@@ -15,6 +15,8 @@ export const en: Locale = {
     items: '',
     today: 'Today',
     newTask: 'New Task',
+    markDone: 'Mark as Done',
+    markInProgress: 'Mark as In Progress',
   },
 
   // ── Field Types ──
@@ -156,8 +158,6 @@ export const en: Locale = {
 
   // ── Table View ──
   table: {
-    markDone: 'Mark as done',
-    markInProgress: 'Mark as in progress',
     deleteTask: 'Delete task',
     enterToAdd: 'Type and press Enter...',
   },
@@ -172,7 +172,6 @@ export const en: Locale = {
     emptyMessage: 'Set a start date or due date on tasks to display the Gantt chart.',
     taskName: 'Task Name',
     monthFormat: 'MMM yyyy',
-    markDone: 'Mark as done',
     scrollToToday: 'Scroll to today',
   },
 

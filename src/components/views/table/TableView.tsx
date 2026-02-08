@@ -5,9 +5,10 @@ import { useViewStore } from '@/stores/view-store'
 import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
+import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { sanitizeUrl, sanitizeColor } from '@/lib/sanitize'
+import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function TableView() {
@@ -103,24 +104,10 @@ export function TableView() {
               <td className="px-2 py-1">
                 <div className="flex items-center gap-0.5">
                   {/* 完了チェックボックス */}
-                  <button
-                    onClick={() => {
-                      const isDone = task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
-                      updateTask(task.id, SYSTEM_FIELD_IDS.STATUS, isDone ? 'in_progress' : 'done')
-                    }}
-                    className={cn(
-                      'rounded p-0.5 transition-colors',
-                      task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
-                        ? 'text-green-500 hover:text-green-600'
-                        : 'text-muted-foreground/40 hover:text-green-500'
-                    )}
-                    title={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done' ? t.table.markInProgress : t.table.markDone}
-                  >
-                    {task.fieldValues[SYSTEM_FIELD_IDS.STATUS] === 'done'
-                      ? <CheckSquare size={16} />
-                      : <Square size={16} />
-                    }
-                  </button>
+                  <TaskCheckButton
+                    taskId={task.id}
+                    status={task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string}
+                  />
                   <button
                     onClick={() => deleteTask(task.id)}
                     className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
