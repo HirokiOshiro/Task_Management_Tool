@@ -59,7 +59,7 @@ export function TableView() {
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-border bg-muted/80 backdrop-blur-sm">
             {/* 行操作カラム（完了チェック＋削除） */}
-            <th className="w-16 px-2 py-2" />
+            <th className="w-16 px-2 py-2 text-left text-xs font-medium text-muted-foreground">{t.common.done}</th>
             {visibleFields.map((field) => {
               const sort = activeView.sorts.find((s) => s.fieldId === field.id)
               return (

@@ -27,6 +27,11 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
+
+  /* チェック完了アニメーション */
+  --animate-check-pop: check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-check-ring: check-ring 0.5s ease-out forwards;
+  --animate-check-particle: check-particle 0.5s ease-out forwards;
 }
 
 /* ダークモード */
@@ -85,4 +90,21 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   opacity: 0.5;
+}
+
+/* チェック完了アニメーション */
+@keyframes check-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+@keyframes check-ring {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes check-particle {
+  0% { transform: rotate(var(--particle-angle)) translateY(0) scale(1); opacity: 1; }
+  100% { transform: rotate(var(--particle-angle)) translateY(-10px) scale(0); opacity: 0; }
 }

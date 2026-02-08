@@ -308,7 +308,8 @@ export function GanttView() {
         {/* ヘッダー */}
         <div className="sticky top-0 z-10 flex border-b border-border bg-background">
           {/* タスク名カラム */}
-          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 flex items-end pb-1">
+          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 flex items-end pb-1 gap-3">
+            <div className="text-xs font-medium text-muted-foreground flex-shrink-0">{t.common.done}</div>
             <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
           </div>
           {/* 日付ヘッダー */}

@@ -17,6 +17,7 @@ export const en: Locale = {
     newTask: 'New Task',
     markDone: 'Mark as Done',
     markInProgress: 'Mark as In Progress',
+    done: 'Done',
   },
 
   // ── Field Types ──

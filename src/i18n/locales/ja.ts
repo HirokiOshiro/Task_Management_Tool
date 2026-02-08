@@ -15,6 +15,7 @@ export const ja = {
     newTask: '新規タスク',
     markDone: '完了にする',
     markInProgress: '進行中に戻す',
+    done: '完了',
   },
 
   // ── Field Types ──
@@ -312,6 +313,7 @@ export type Locale = {
     newTask: string
     markDone: string
     markInProgress: string
+    done: string
   }
   fieldTypes: Record<string, string>
   fieldNames: Record<string, string>
