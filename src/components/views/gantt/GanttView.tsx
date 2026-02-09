@@ -530,7 +530,7 @@ export function GanttView() {
       <div className="h-full overflow-auto" ref={containerRef}>
       <div
         style={{ width: TASK_NAME_WIDTH + totalDays * DAY_WIDTH, minHeight: '100%' }}
-        className={(dragState || marquee) ? 'select-none' : ''}
+        className={cn('relative', (dragState || marquee) ? 'select-none' : '')}
         onMouseDown={handleMarqueeStart}
         onDoubleClick={handleChartDoubleClick}
       >
