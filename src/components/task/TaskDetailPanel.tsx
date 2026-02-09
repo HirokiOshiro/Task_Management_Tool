@@ -506,6 +506,11 @@ function MemoSection({
 
     // Enter: 箇条書き自動継続
     if (e.key === 'Enter') {
+      // IME入力中（日本語入力の確定時）は処理をスキップ
+      if (e.nativeEvent.isComposing) {
+        return
+      }
+
       const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
       const currentLine = value.substring(lineStart, selectionStart)
 
