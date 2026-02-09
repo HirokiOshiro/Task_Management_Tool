@@ -800,7 +800,7 @@ export function GanttView() {
         {/* マーキー（範囲選択）矩形 */}
         {marqueeRect && (
           <div
-            className="absolute border-2 border-primary/60 bg-primary/10 rounded pointer-events-none z-40"
+            className="absolute border border-primary/70 bg-primary/10 rounded pointer-events-none z-40 gantt-marquee"
             style={{
               left: marqueeRect.left,
               top: marqueeRect.top,
