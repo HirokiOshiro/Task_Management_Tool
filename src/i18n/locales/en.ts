@@ -319,6 +319,7 @@ export const en: Locale = {
           { title: 'Browser Auto-save', desc: 'Task data is automatically saved to browser local storage. Your data will be automatically restored when you revisit the page.' },
           { title: 'File Backup Recommended', desc: 'Auto-save is browser-only. Clearing browser data or cache will delete your data. Please regularly export important data using "Save as JSON" or "Save as Excel".' },
           { title: 'Demo Data Overwrites', desc: 'Clicking "Demo Data" will replace your current data with sample data. Please save your data first if it\'s important.' },
+          { title: 'Shared Devices', desc: 'On shared PCs, data remains in the browser local storage. Save to a file after use and clear browser data if needed.' },
           { title: 'Supported Browsers', desc: 'Latest versions of Chrome, Edge, Safari, and Firefox are recommended. Some features may not work properly on older browsers.' },
         ],
       },
