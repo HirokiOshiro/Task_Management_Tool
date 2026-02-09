@@ -237,20 +237,30 @@ export const ja = {
         items: [
           'テーブルビューではセルをクリックして直接編集できます',
           'タスク名やガントバーをクリックすると詳細パネルが開きます',
-          '詳細パネルの下部にあるメモ欄に自由にメモを書き込めます',
+          '開始日を入力すると、期限が空の場合は自動的に同じ日が設定されます',
+        ],
+        memoTitle: 'メモ機能',
+        memoDesc: '詳細パネル下部のメモ欄はMarkdown記法に対応しています。',
+        memoFeatures: [
+          '**太字**、_斜体_、`コード` などの書式が使えます',
+          '「-」「*」「1.」で箇条書きを作成でき、Enterで自動的に継続します',
+          'Tabでインデント追加、Shift+Tabでインデント削除ができます',
+          'Escapeキーで編集をキャンセルできます',
         ],
       },
       views: {
         title: '4つのビュー',
         switchTabs: 'ヘッダーのタブでビューを切り替えられます。',
-        table: { name: 'テーブル', desc: 'スプレッドシートのようにタスクを一覧表示。セルをクリックして直接編集、カラム幅の調整ができます。' },
-        kanban: { name: 'カンバン', desc: 'ステータスごとにカードを表示。ドラッグ＆ドロップでステータスを変更できます。' },
-        gantt: { name: 'ガントチャート', desc: 'タスクの開始日〜期限をバーで表示。バーをドラッグして日程を移動したり、バーの端をドラッグして期間を調整できます。' },
+        table: { name: 'テーブル', desc: 'スプレッドシートのようにタスクを一覧表示。セルをクリックして直接編集、行をクリックして詳細パネルを開けます。' },
+        kanban: { name: 'カンバン', desc: 'ステータスごとにカードを表示。ドラッグ＆ドロップでステータスを変更できます。グループ化するフィールドはビュー設定で変更可能です。' },
+        gantt: { name: 'ガントチャート', desc: 'タスクの開始日〜期限をバーで表示。バーのドラッグで日程移動、端のドラッグで期間調整ができます。空き領域をクリックして新規タスクを作成したり、マウスドラッグで複数タスクを範囲選択して一括移動することもできます。「今日」ボタンで現在日にスクロールできます。' },
         calendar: { name: 'カレンダー', desc: '月間カレンダーに期限のあるタスクを表示。タスクをクリックすると詳細を確認できます。' },
       },
       filterSort: {
         title: 'フィルタとソート',
         description: 'ヘッダー下部のフィルタバーでタスクを絞り込めます。',
+        quickFilter: 'クイックフィルター：',
+        quickFilterDesc: '「完了以外」「全て」で完了タスクの表示を切り替え、「今週」「今月」「2カ月」で期限による絞り込みが可能です',
         addFilter: 'フィルタ追加：',
         addFilterDesc: '「+ フィルタ」をクリックし、フィールド・条件・値を選択',
         sort: 'ソート：',
@@ -260,7 +270,7 @@ export const ja = {
         title: 'サイドバーの機能',
         description: '左側のサイドバーでは以下の操作ができます。',
         viewManagement: 'ビュー管理：',
-        viewManagementDesc: 'ビューの追加・名前変更・削除',
+        viewManagementDesc: 'ビューの追加・名前変更・削除、ドラッグ＆ドロップで並び替え',
         fieldManagement: 'フィールド管理：',
         fieldManagementDesc: 'カスタムフィールドの追加やドラッグ並び替え、表示/非表示の切り替え',
         themeToggle: 'テーマ切替：',
@@ -284,6 +294,8 @@ export const ja = {
         saveJsonNote: 'です。フィールド構成やメモなど全ての情報が保存されます。',
         saveExcelTitle: 'Excelで保存',
         saveExcelDesc: 'タスクデータをExcelファイル（.xlsx）としてダウンロードします。ExcelやGoogleスプレッドシートでの開覧・共有に便利です。',
+        groupExportTitle: 'グループ単位エクスポート',
+        groupExportDesc: 'JSON・Excel保存時に、グループフィールド（セレクト/マルチセレクト型）を指定して特定グループのタスクだけをエクスポートできます。',
         demoTitle: 'デモデータ',
         demoDesc: 'サンプルのタスクデータを読み込みます。初めて使う方はまずこちらを読み込んで、操作を試してみてください。',
         statusHint: '💡 保存状態の確認方法',
@@ -463,6 +475,9 @@ export type Locale = {
         title: string
         addTask: string
         items: string[]
+        memoTitle: string
+        memoDesc: string
+        memoFeatures: string[]
       }
       views: {
         title: string
@@ -475,6 +490,8 @@ export type Locale = {
       filterSort: {
         title: string
         description: string
+        quickFilter: string
+        quickFilterDesc: string
         addFilter: string
         addFilterDesc: string
         sort: string
@@ -508,6 +525,8 @@ export type Locale = {
         saveJsonNote: string
         saveExcelTitle: string
         saveExcelDesc: string
+        groupExportTitle: string
+        groupExportDesc: string
         demoTitle: string
         demoDesc: string
         statusHint: string

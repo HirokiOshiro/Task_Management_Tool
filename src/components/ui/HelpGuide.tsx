@@ -13,7 +13,6 @@ import {
   GripVertical,
   MousePointerClick,
   ChevronRight,
-  StickyNote,
   ShieldCheck,
   AlertTriangle,
   FileJson,
@@ -21,6 +20,8 @@ import {
   Database,
   HardDrive,
   Info,
+  Keyboard,
+  FolderDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
@@ -63,15 +64,26 @@ function buildSections(t: Locale): Section[] {
           <ul className="space-y-2 pl-1">
             {h.task.items.map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                {i < 2 ? (
-                  <MousePointerClick size={14} className="mt-0.5 flex-shrink-0 text-primary" />
-                ) : (
-                  <StickyNote size={14} className="mt-0.5 flex-shrink-0 text-primary" />
-                )}
+                <MousePointerClick size={14} className="mt-0.5 flex-shrink-0 text-primary" />
                 <span>{item}</span>
               </li>
             ))}
           </ul>
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 font-medium text-foreground">
+              <Keyboard size={14} className="text-primary" />
+              <span className="text-xs">{h.task.memoTitle}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{h.task.memoDesc}</p>
+            <ul className="space-y-1 pl-1">
+              {h.task.memoFeatures.map((feature, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <ChevronRight size={12} className="mt-0.5 flex-shrink-0 text-primary" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       ),
     },
@@ -109,6 +121,10 @@ function buildSections(t: Locale): Section[] {
         <div className="space-y-3 text-sm text-foreground/80">
           <p>{h.filterSort.description}</p>
           <ul className="space-y-2 pl-1">
+            <li className="flex items-start gap-2">
+              <ChevronRight size={14} className="mt-0.5 flex-shrink-0 text-primary" />
+              <span><span className="font-medium">{h.filterSort.quickFilter}</span>{h.filterSort.quickFilterDesc}</span>
+            </li>
             <li className="flex items-start gap-2">
               <ChevronRight size={14} className="mt-0.5 flex-shrink-0 text-primary" />
               <span><span className="font-medium">{h.filterSort.addFilter}</span>{h.filterSort.addFilterDesc}</span>
@@ -195,6 +211,14 @@ function buildSections(t: Locale): Section[] {
               <div>
                 <div className="font-medium text-foreground text-xs">{h.dataSection.saveExcelTitle}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{h.dataSection.saveExcelDesc}</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5 rounded-md bg-accent/30 p-2.5">
+              <FolderDown size={15} className="mt-0.5 flex-shrink-0 text-orange-500" />
+              <div>
+                <div className="font-medium text-foreground text-xs">{h.dataSection.groupExportTitle}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{h.dataSection.groupExportDesc}</div>
               </div>
             </div>
 

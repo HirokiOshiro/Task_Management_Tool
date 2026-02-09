@@ -92,7 +92,7 @@ function createDefaultViews(): ViewConfig[] {
 
 export const useViewStore = create<ViewState>()(
   immer((set, get) => ({
-    activeViewId: 'view-table',
+    activeViewId: 'view-gantt',
     views: createDefaultViews(),
 
     setActiveView: (viewId) => {
