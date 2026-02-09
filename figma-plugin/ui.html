@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 16px;
+      background: #ffffff;
+      color: #1e293b;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+    .section {
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .checkbox-item input[type="checkbox"] {
+      accent-color: #6366f1;
+      width: 14px;
+      height: 14px;
+    }
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    button.primary {
+      width: 100%;
+      padding: 10px 16px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.primary:hover {
+      background: #4f46e5;
+    }
+    button.primary:active {
+      background: #4338ca;
+    }
+    button.secondary {
+      width: 100%;
+      padding: 8px 16px;
+      background: white;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.15s;
+    }
+    button.secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .divider {
+      height: 1px;
+      background: #e2e8f0;
+      margin: 16px 0;
+    }
+    .progress {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #6366f1;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .progress.show {
+      display: block;
+    }
+    .info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #1e40af;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <h2>📐 画面構成マップ生成</h2>
+    <p class="subtitle">Task Management Tool の全画面をFigmaに自動配置</p>
+
+    <div class="info">
+      💡 生成ボタンを押すと、現在のページにレイアウト構成図・各画面ワイヤーフレーム・遷移フロー図が自動配置されます。
+    </div>
+
+    <div class="section">
+      <div class="section-title">生成内容</div>
+      <div class="checkbox-group">
+        <label class="checkbox-item">
+          <input type="checkbox" id="chk-layout" checked>
+          <span class="color-dot" style="background:#8b5cf6"></span>
+          レイアウト構成図（AppShell 全体像）
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chk-screens" checked>
+          <span class="color-dot" style="background:#3b82f6"></span>
+          各画面ワイヤーフレーム（4ビュー + 詳細パネル）
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chk-flow" checked>
+          <span class="color-dot" style="background:#22c55e"></span>
+          遷移フロー図
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="chk-stores" checked>
+          <span class="color-dot" style="background:#f59e0b"></span>
+          状態管理（Stores）マップ
+        </label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="primary" id="btn-generate" onclick="generate()">
+      🚀 Figma に生成する
+    </button>
+    <button class="secondary" onclick="parent.postMessage({pluginMessage:{type:'cancel'}}, '*')">
+      閉じる
+    </button>
+  </div>
+
+  <div class="progress" id="progress">
+    ⏳ 生成中...
+  </div>
+
+  <script>
+    function generate() {
+      const options = {
+        layout: document.getElementById('chk-layout').checked,
+        screens: document.getElementById('chk-screens').checked,
+        flow: document.getElementById('chk-flow').checked,
+        stores: document.getElementById('chk-stores').checked,
+      };
+      document.getElementById('main').style.display = 'none';
+      document.getElementById('progress').classList.add('show');
+      parent.postMessage({ pluginMessage: { type: 'generate', options } }, '*');
+    }
+
+    window.onmessage = (event) => {
+      if (event.data.pluginMessage?.type === 'done') {
+        document.getElementById('progress').innerHTML = '✅ 生成完了！';
+        setTimeout(() => {
+          parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+        }, 1200);
+      }
+    };
+  </script>
+</body>
+</html>

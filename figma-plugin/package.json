@@ -1,0 +1,13 @@
+{
+  "name": "task-management-screen-map-plugin",
+  "version": "1.0.0",
+  "description": "Task Management Toolの画面構成をFigmaに自動生成するプラグイン",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && echo 'Build complete!'",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "typescript": "^5.3.0"
+  }
+}

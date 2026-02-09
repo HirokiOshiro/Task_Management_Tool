@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1800" viewBox="0 0 2200 1800">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowhead-gray" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+    <style>
+      .title { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 28px; font-weight: 700; fill: #1e293b; }
+      .subtitle { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 14px; fill: #64748b; }
+      .section-title { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 16px; font-weight: 700; fill: #1e293b; }
+      .component-title { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 13px; font-weight: 600; fill: #1e293b; }
+      .component-desc { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 10px; fill: #64748b; }
+      .label { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 11px; fill: #6366f1; font-weight: 500; }
+      .label-orange { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 10px; fill: #f97316; font-weight: 500; }
+      .label-green { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 10px; fill: #22c55e; font-weight: 500; }
+      .label-gray { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 10px; fill: #94a3b8; font-weight: 500; }
+      .legend-text { font-family: 'Inter', 'Helvetica Neue', sans-serif; font-size: 11px; fill: #475569; }
+      .file-path { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: #94a3b8; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2200" height="1800" fill="#f8fafc" rx="12"/>
+
+  <!-- ===== Title ===== -->
+  <text x="60" y="55" class="title">Task Management Tool — 画面構成 &amp; 遷移マップ</text>
+  <text x="60" y="78" class="subtitle">React + Zustand + Vite  |  SPA（シングルページ）  |  ルーティングなし  |  状態駆動でビュー切替</text>
+
+  <!-- ===== Legend ===== -->
+  <rect x="1650" y="30" width="500" height="140" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="1670" y="55" class="section-title">凡例</text>
+  <line x1="1670" y1="72" x2="1720" y2="72" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="1730" y="77" class="legend-text">ビュー切替（状態駆動）</text>
+  <line x1="1670" y1="95" x2="1720" y2="95" stroke="#f97316" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowhead-orange)"/>
+  <text x="1730" y="100" class="legend-text">パネル開閉（オーバーレイ）</text>
+  <line x1="1670" y1="118" x2="1720" y2="118" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrowhead-green)"/>
+  <text x="1730" y="123" class="legend-text">ユーザー操作トリガー</text>
+  <line x1="1670" y1="141" x2="1720" y2="141" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2,3" marker-end="url(#arrowhead-gray)"/>
+  <text x="1730" y="146" class="legend-text">常時表示 / 条件付き表示</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 0: App Entry (Loading Screen) -->
+  <!-- ================================================================ -->
+  <rect x="60" y="110" width="280" height="90" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="80" y="138" class="component-title">🔄 Loading Screen</text>
+  <text x="80" y="155" class="component-desc">isLoaded === false の間表示</text>
+  <text x="80" y="170" class="component-desc">「読み込み中...」テキスト</text>
+  <text x="80" y="188" class="file-path">src/App.tsx</text>
+
+  <!-- Arrow from Loading to AppShell -->
+  <line x1="340" y1="155" x2="430" y2="155" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrowhead-green)"/>
+  <text x="350" y="147" class="label-green">データ読込完了</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 1: AppShell (Main Layout) -->
+  <!-- ================================================================ -->
+  <rect x="440" y="105" width="1680" height="100" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="470" y="132" class="section-title">📐 AppShell — メインレイアウト</text>
+  <text x="470" y="150" class="component-desc">flex h-screen: Sidebar | (Header + ViewContainer + StatusBar) | TaskDetailPanel</text>
+  <text x="470" y="168" class="file-path">src/components/layout/AppShell.tsx</text>
+  <text x="470" y="186" class="component-desc">常時表示: ToastContainer（固定オーバーレイ z-100）</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 2: Layout Components -->
+  <!-- ================================================================ -->
+
+  <!-- ===== Sidebar ===== -->
+  <rect x="60" y="250" width="320" height="520" rx="10" fill="white" stroke="#6366f1" stroke-width="2"/>
+  <rect x="60" y="250" width="320" height="40" rx="10" fill="#6366f1"/>
+  <rect x="60" y="275" width="320" height="15" fill="#6366f1"/>
+  <text x="80" y="276" fill="white" class="component-title">📁 Sidebar</text>
+
+  <!-- Sidebar content -->
+  <text x="80" y="310" class="file-path">src/components/layout/Sidebar.tsx</text>
+  <text x="80" y="328" class="component-desc">開閉: sidebarOpen (UIStore)</text>
+
+  <!-- Sidebar Section: Header -->
+  <rect x="75" y="340" width="290" height="40" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="90" y="358" class="component-title">🏷️ アプリタイトル</text>
+  <text x="90" y="372" class="component-desc">タスク管理ツール ＋ 閉じるボタン</text>
+
+  <!-- Sidebar Section: View List -->
+  <rect x="75" y="390" width="290" height="120" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="90" y="410" class="component-title">📋 ビュー一覧</text>
+  <text x="90" y="426" class="component-desc">• ガント / テーブル / カレンダー / カンバン</text>
+  <text x="90" y="440" class="component-desc">• ビュー追加（＋ボタン → 4種選択パネル）</text>
+  <text x="90" y="454" class="component-desc">• リネーム（✏️）/ 削除（🗑️）</text>
+  <text x="90" y="468" class="component-desc">• クリックでアクティブビュー切替</text>
+  <text x="90" y="498" class="component-desc">状態: ViewStore (activeViewId, views[])</text>
+
+  <!-- Sidebar Section: DataSourceSelector -->
+  <rect x="75" y="520" width="290" height="90" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="90" y="540" class="component-title">💾 データソースセレクター</text>
+  <text x="90" y="556" class="component-desc">• ファイルを開く（JSON/Excel）</text>
+  <text x="90" y="570" class="component-desc">• 上書き保存 / JSON保存 / Excel保存</text>
+  <text x="90" y="584" class="component-desc">• インポート / デモデータ</text>
+  <text x="90" y="600" class="file-path">src/components/data-source/DataSourceSelector.tsx</text>
+
+  <!-- Sidebar Section: FieldManager -->
+  <rect x="75" y="620" width="290" height="80" rx="6" fill="#f0fdf4" stroke="#22c55e"/>
+  <text x="90" y="640" class="component-title">🔧 フィールド管理</text>
+  <text x="90" y="656" class="component-desc">• 表示/非表示切替 / D&amp;Dで並び替え</text>
+  <text x="90" y="670" class="component-desc">• カスタムフィールド追加/削除</text>
+  <text x="90" y="690" class="file-path">src/components/fields/FieldManager.tsx</text>
+
+  <!-- Sidebar Section: Theme Toggle -->
+  <rect x="75" y="710" width="290" height="40" rx="6" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="90" y="730" class="component-title">🌓 テーマ切替</text>
+  <text x="90" y="744" class="component-desc">ライト / ダーク（UIStore.theme）</text>
+
+  <!-- ===== Header ===== -->
+  <rect x="420" y="250" width="880" height="140" rx="10" fill="white" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="420" y="250" width="880" height="36" rx="10" fill="#3b82f6"/>
+  <rect x="420" y="272" width="880" height="14" fill="#3b82f6"/>
+  <text x="440" y="274" fill="white" class="component-title">🔝 Header</text>
+  <text x="440" y="308" class="file-path">src/components/layout/Header.tsx</text>
+
+  <!-- Header contents -->
+  <rect x="435" y="318" width="110" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="449" y="338" class="component-desc">☰ メニュー</text>
+
+  <rect x="555" y="318" width="80" height="32" rx="5" fill="#6366f1"/>
+  <text x="565" y="339" fill="white" style="font-size:10px;font-family:sans-serif">ガント</text>
+
+  <rect x="640" y="318" width="80" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="647" y="339" class="component-desc">テーブル</text>
+
+  <rect x="725" y="318" width="80" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="729" y="339" class="component-desc">カレンダー</text>
+
+  <rect x="810" y="318" width="80" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="819" y="339" class="component-desc">カンバン</text>
+
+  <rect x="935" y="318" width="55" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="944" y="339" class="component-desc">EN/JA</text>
+
+  <rect x="995" y="318" width="30" height="32" rx="5" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="1003" y="339" class="component-desc">❓</text>
+
+  <rect x="1030" y="318" width="100" height="32" rx="5" fill="#22c55e"/>
+  <text x="1038" y="339" fill="white" style="font-size:10px;font-family:sans-serif">＋ タスク追加</text>
+
+  <!-- Header: FilterBar -->
+  <rect x="435" y="358" width="850" height="26" rx="4" fill="#faf5ff" stroke="#c4b5fd"/>
+  <text x="450" y="376" class="component-desc">🔍 フィルターバー — ステータスフィルタ / 日付クイックフィルタ / カスタムフィルタ追加</text>
+  <text x="1090" y="376" class="file-path">FilterBar.tsx</text>
+
+  <!-- ===== StatusBar ===== -->
+  <rect x="420" y="1020" width="880" height="55" rx="10" fill="white" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="440" y="1045" class="component-title">📊 StatusBar</text>
+  <text x="440" y="1060" class="component-desc">接続状態 / データソース名 / 自動保存 / タスク数 / エクスポート状態</text>
+  <text x="1100" y="1060" class="file-path">StatusBar.tsx</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 3: View Container & 4 Views -->
+  <!-- ================================================================ -->
+  <rect x="420" y="410" width="880" height="590" rx="10" fill="white" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="440" y="438" class="section-title">📺 ViewContainer — アクティブビュー表示エリア</text>
+  <text x="440" y="456" class="component-desc">activeView.type で切替（switch文）</text>
+  <text x="440" y="470" class="file-path">src/components/views/ViewContainer.tsx</text>
+
+  <!-- View: Table -->
+  <rect x="445" y="490" width="400" height="120" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="465" y="515" class="component-title">📊 テーブルビュー (TableView)</text>
+  <text x="465" y="532" class="component-desc">• スプレッドシート形式のタスク一覧</text>
+  <text x="465" y="546" class="component-desc">• インラインセル編集 / ソート / カラムリサイズ</text>
+  <text x="465" y="560" class="component-desc">• 行クリック → TaskDetailPanel 開く</text>
+  <text x="465" y="574" class="component-desc">• 完了チェックボタン / 行追加 / 行削除</text>
+  <text x="465" y="600" class="file-path">src/components/views/table/TableView.tsx</text>
+
+  <!-- View: Kanban -->
+  <rect x="860" y="490" width="400" height="120" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="880" y="515" class="component-title">📋 カンバンビュー (KanbanView)</text>
+  <text x="880" y="532" class="component-desc">• ステータス別カラム表示</text>
+  <text x="880" y="546" class="component-desc">• D&amp;Dでカラム間移動 → ステータス自動更新</text>
+  <text x="880" y="560" class="component-desc">• カード クリック → TaskDetailPanel 開く</text>
+  <text x="880" y="574" class="component-desc">• カラム内にタスク追加ボタン</text>
+  <text x="880" y="600" class="file-path">src/components/views/kanban/KanbanView.tsx</text>
+
+  <!-- View: Gantt -->
+  <rect x="445" y="625" width="400" height="140" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+  <text x="465" y="650" class="component-title">📅 ガントビュー (GanttView)</text>
+  <text x="465" y="667" class="component-desc">• タイムラインにバーとしてタスク表示</text>
+  <text x="465" y="681" class="component-desc">• D&amp;Dでバー移動 / 両端リサイズで日程変更</text>
+  <text x="465" y="695" class="component-desc">• マーキー範囲選択 / 一括移動</text>
+  <text x="465" y="709" class="component-desc">• タイムライン空白クリック → インライン作成</text>
+  <text x="465" y="723" class="component-desc">• タスク名クリック → TaskDetailPanel 開く</text>
+  <text x="465" y="755" class="file-path">src/components/views/gantt/GanttView.tsx</text>
+
+  <!-- View: Calendar -->
+  <rect x="860" y="625" width="400" height="140" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="880" y="650" class="component-title">📆 カレンダービュー (CalendarView)</text>
+  <text x="880" y="667" class="component-desc">• 月表示カレンダーにタスク配置</text>
+  <text x="880" y="681" class="component-desc">• 前月/翌月ナビゲーション</text>
+  <text x="880" y="695" class="component-desc">• 「今日」ボタンで当日に戻る</text>
+  <text x="880" y="709" class="component-desc">• タスクバッジ クリック → TaskDetailPanel 開く</text>
+  <text x="880" y="723" class="component-desc">• 期限日(DUE_DATE)でグルーピング</text>
+  <text x="880" y="755" class="file-path">src/components/views/calendar/CalendarView.tsx</text>
+
+  <!-- ===== Shared: FilterBar in Views ===== -->
+  <rect x="445" y="785" width="815" height="35" rx="6" fill="#faf5ff" stroke="#c4b5fd"/>
+  <text x="465" y="808" class="component-desc">全ビュー共通: フィルタ＆ソート条件はアクティブビュー(ViewConfig)ごとに独立管理</text>
+
+  <!-- ===== View Switching Arrows ===== -->
+  <!-- Sidebar view list → ViewContainer -->
+  <line x1="365" y1="430" x2="420" y2="430" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="370" y="420" class="label" transform="rotate(-10,370,420)">setActiveView</text>
+
+  <!-- Header tabs → ViewContainer -->
+  <path d="M 700 350 L 700 410" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="710" y="385" class="label">タブ切替</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 4: Overlay Panels & Modals -->
+  <!-- ================================================================ -->
+
+  <!-- ===== TaskDetailPanel ===== -->
+  <rect x="1360" y="250" width="380" height="430" rx="10" fill="white" stroke="#f97316" stroke-width="2"/>
+  <rect x="1360" y="250" width="380" height="36" rx="10" fill="#f97316"/>
+  <rect x="1360" y="272" width="380" height="14" fill="#f97316"/>
+  <text x="1380" y="274" fill="white" class="component-title">📝 TaskDetailPanel（スライドイン）</text>
+
+  <text x="1380" y="310" class="file-path">src/components/task/TaskDetailPanel.tsx</text>
+  <text x="1380" y="328" class="component-desc">開閉: detailPanelOpen (UIStore)</text>
+  <text x="1380" y="344" class="component-desc">対象: selectedTaskId (UIStore)</text>
+
+  <!-- DetailPanel contents -->
+  <rect x="1375" y="360" width="350" height="35" rx="5" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="1390" y="382" class="component-desc">🏷️ ヘッダー: タスク詳細 ＋ 削除 ＋ 閉じる</text>
+
+  <rect x="1375" y="402" width="350" height="80" rx="5" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="1390" y="420" class="component-desc">📋 フィールド一覧（DetailField × N）</text>
+  <text x="1390" y="435" class="component-desc">• タイトル / ステータス / 担当者 / 期限 …</text>
+  <text x="1390" y="450" class="component-desc">• クリックで inline editing</text>
+  <text x="1390" y="465" class="component-desc">• field-editors/ 配下の専用エディタを利用</text>
+  <text x="1390" y="477" class="component-desc">• field-renderers/ 配下の表示コンポーネント</text>
+
+  <rect x="1375" y="490" width="350" height="55" rx="5" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="1390" y="510" class="component-desc">📝 メモセクション (MemoSection)</text>
+  <text x="1390" y="525" class="component-desc">• Markdown対応 / 表示切替</text>
+  <text x="1390" y="537" class="component-desc">• ReactMarkdownでレンダリング</text>
+
+  <rect x="1375" y="553" width="350" height="30" rx="5" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="1390" y="573" class="component-desc">📅 フッター: 作成日時 / 更新日時</text>
+
+  <rect x="1375" y="595" width="350" height="30" rx="5" fill="#fecaca" stroke="#ef4444"/>
+  <text x="1390" y="615" class="component-desc">🔲 背景オーバーレイ（クリックで閉じる）</text>
+
+  <!-- Arrows: Views → TaskDetailPanel -->
+  <line x1="1300" y1="540" x2="1360" y2="460" stroke="#f97316" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowhead-orange)"/>
+  <text x="1300" y="510" class="label-orange">タスク選択</text>
+
+  <!-- ===== HelpGuide Modal ===== -->
+  <rect x="1360" y="700" width="380" height="160" rx="10" fill="white" stroke="#a855f7" stroke-width="2"/>
+  <rect x="1360" y="700" width="380" height="36" rx="10" fill="#a855f7"/>
+  <rect x="1360" y="722" width="380" height="14" fill="#a855f7"/>
+  <text x="1380" y="724" fill="white" class="component-title">❓ HelpGuide（モーダル）</text>
+  <text x="1380" y="756" class="file-path">src/components/ui/HelpGuide.tsx</text>
+  <text x="1380" y="774" class="component-desc">• アコーディオン形式のヘルプセクション</text>
+  <text x="1380" y="790" class="component-desc">• 概要 / タスク操作 / ビュー説明</text>
+  <text x="1380" y="806" class="component-desc">• フィルタ / フィールド / データ管理</text>
+  <text x="1380" y="822" class="component-desc">• セキュリティ情報</text>
+  <text x="1380" y="845" class="component-desc">開閉: Header の ❓ ボタン (useState)</text>
+
+  <!-- Arrow: Header → HelpGuide -->
+  <line x1="1130" y1="340" x2="1360" y2="740" stroke="#f97316" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead-orange)"/>
+  <text x="1180" y="500" class="label-orange">❓クリック</text>
+
+  <!-- ===== Toast Container ===== -->
+  <rect x="1780" y="250" width="340" height="110" rx="10" fill="white" stroke="#22c55e" stroke-width="2"/>
+  <rect x="1780" y="250" width="340" height="36" rx="10" fill="#22c55e"/>
+  <rect x="1780" y="272" width="340" height="14" fill="#22c55e"/>
+  <text x="1800" y="274" fill="white" class="component-title">🔔 ToastContainer</text>
+  <text x="1800" y="310" class="file-path">src/components/ui/ToastContainer.tsx</text>
+  <text x="1800" y="328" class="component-desc">• 右下固定（z-100）に通知表示</text>
+  <text x="1800" y="344" class="component-desc">• success / error / info の3タイプ</text>
+  <text x="1800" y="355" class="component-desc">• ToastStore で管理、自動消去</text>
+
+  <!-- ===== Import/Export Modals ===== -->
+  <rect x="1780" y="390" width="340" height="150" rx="10" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="1800" y="418" class="component-title">📦 インポート/エクスポート ダイアログ</text>
+  <text x="1800" y="440" class="file-path">DataSourceSelector.tsx 内</text>
+  <text x="1800" y="458" class="component-desc">【インポートプレビュー】</text>
+  <text x="1800" y="474" class="component-desc">• ファイル選択 → パース → プレビュー表示</text>
+  <text x="1800" y="490" class="component-desc">• 追記 or 入替 モード選択 → 実行</text>
+  <text x="1800" y="508" class="component-desc">【エクスポートオプション】</text>
+  <text x="1800" y="524" class="component-desc">• JSON / Excel 選択 + スコープ指定</text>
+
+  <!-- Arrow: Sidebar DataSource → Modals -->
+  <path d="M 365 570 Q 1100 620 1780 460" stroke="#f97316" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#arrowhead-orange)"/>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 5: State Management (Stores) -->
+  <!-- ================================================================ -->
+  <rect x="60" y="850" width="1680" height="200" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="80" y="878" class="section-title">⚡ 状態管理（Zustand Stores）— 画面遷移はすべて状態駆動</text>
+
+  <!-- UIStore -->
+  <rect x="80" y="900" width="280" height="110" rx="8" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="100" y="922" class="component-title">UIStore</text>
+  <text x="100" y="940" class="component-desc">• sidebarOpen → Sidebar 開閉</text>
+  <text x="100" y="954" class="component-desc">• theme → ライト/ダーク切替</text>
+  <text x="100" y="968" class="component-desc">• selectedTaskId → 選択中タスク</text>
+  <text x="100" y="982" class="component-desc">• detailPanelOpen → 詳細パネル開閉</text>
+  <text x="100" y="1000" class="file-path">src/stores/ui-store.ts</text>
+
+  <!-- ViewStore -->
+  <rect x="390" y="900" width="280" height="110" rx="8" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="410" y="922" class="component-title">ViewStore</text>
+  <text x="410" y="940" class="component-desc">• activeViewId → ビュー切替</text>
+  <text x="410" y="954" class="component-desc">• views[] → ビュー設定一覧</text>
+  <text x="410" y="968" class="component-desc">• sorts / filters / group</text>
+  <text x="410" y="982" class="component-desc">• kanban/gantt 専用設定</text>
+  <text x="410" y="1000" class="file-path">src/stores/view-store.ts</text>
+
+  <!-- TaskStore -->
+  <rect x="700" y="900" width="280" height="110" rx="8" fill="white" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="720" y="922" class="component-title">TaskStore (persist)</text>
+  <text x="720" y="940" class="component-desc">• tasks[] → タスクデータ</text>
+  <text x="720" y="954" class="component-desc">• fields[] → フィールド定義</text>
+  <text x="720" y="968" class="component-desc">• CRUD操作 / isDirty</text>
+  <text x="720" y="982" class="component-desc">• loadDataSet / getDataSet</text>
+  <text x="720" y="1000" class="file-path">src/stores/task-store.ts</text>
+
+  <!-- ConnectionStore -->
+  <rect x="1010" y="900" width="280" height="110" rx="8" fill="white" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="1030" y="922" class="component-title">ConnectionStore</text>
+  <text x="1030" y="940" class="component-desc">• status → 接続状態</text>
+  <text x="1030" y="954" class="component-desc">• connection → ファイル情報</text>
+  <text x="1030" y="968" class="component-desc">• adapter → I/Oアダプタ</text>
+  <text x="1030" y="982" class="component-desc">• lastSaved → 最終保存日時</text>
+  <text x="1030" y="1000" class="file-path">src/stores/connection-store.ts</text>
+
+  <!-- ToastStore -->
+  <rect x="1320" y="900" width="280" height="110" rx="8" fill="white" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="1340" y="922" class="component-title">ToastStore</text>
+  <text x="1340" y="940" class="component-desc">• toasts[] → 通知一覧</text>
+  <text x="1340" y="954" class="component-desc">• addToast / removeToast</text>
+  <text x="1340" y="968" class="component-desc">• 自動消去タイマー付き</text>
+  <text x="1340" y="1000" class="file-path">src/stores/toast-store.ts</text>
+
+  <!-- ================================================================ -->
+  <!-- LAYER 6: Interaction Flow Diagram -->
+  <!-- ================================================================ -->
+  <rect x="60" y="1120" width="2060" height="650" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="80" y="1150" class="section-title">🔄 ユーザー操作フロー &amp; 遷移マップ</text>
+
+  <!-- Flow 1: View Switching -->
+  <rect x="80" y="1175" width="600" height="180" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="100" y="1200" class="component-title">① ビュー切替フロー</text>
+  <text x="100" y="1220" class="component-desc">Header タブクリック or Sidebar ビュー選択</text>
+  <text x="100" y="1240" class="component-desc">      ↓</text>
+  <text x="100" y="1255" class="component-desc">ViewStore.setActiveView(viewId)</text>
+  <text x="100" y="1270" class="component-desc">      ↓</text>
+  <text x="100" y="1285" class="component-desc">ViewContainer が activeView.type を読み取り</text>
+  <text x="100" y="1300" class="component-desc">      ↓</text>
+  <text x="100" y="1315" class="component-desc">switch 文で TableView / KanbanView / GanttView / CalendarView を描画</text>
+  <text x="100" y="1340" class="component-desc">※ ページ遷移はなし、コンポーネントの出し分けのみ（SPA）</text>
+
+  <!-- Flow 2: Task Detail -->
+  <rect x="710" y="1175" width="500" height="180" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1"/>
+  <text x="730" y="1200" class="component-title">② タスク詳細表示フロー</text>
+  <text x="730" y="1220" class="component-desc">テーブル行クリック / カンバンカード / ガントバー / カレンダーバッジ</text>
+  <text x="730" y="1240" class="component-desc">      ↓</text>
+  <text x="730" y="1255" class="component-desc">UIStore.openDetailPanel(taskId)</text>
+  <text x="730" y="1270" class="component-desc">      ↓</text>
+  <text x="730" y="1285" class="component-desc">TaskDetailPanel スライドイン表示（右サイド）</text>
+  <text x="730" y="1300" class="component-desc">      ↓</text>
+  <text x="730" y="1315" class="component-desc">フィールド編集 / メモ編集 / 削除</text>
+  <text x="730" y="1340" class="component-desc">オーバーレイクリック or ✕ で閉じる</text>
+
+  <!-- Flow 3: Data I/O -->
+  <rect x="1240" y="1175" width="460" height="180" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+  <text x="1260" y="1200" class="component-title">③ データ入出力フロー</text>
+  <text x="1260" y="1220" class="component-desc">Sidebar → DataSourceSelector</text>
+  <text x="1260" y="1240" class="component-desc">      ↓</text>
+  <text x="1260" y="1255" class="component-desc">ファイルを開く → LocalFileAdapter.connect()</text>
+  <text x="1260" y="1270" class="component-desc">                → adapter.load() → loadDataSet()</text>
+  <text x="1260" y="1290" class="component-desc">保存 → getDataSet() → adapter.save() / fileSave()</text>
+  <text x="1260" y="1310" class="component-desc">インポート → parseImportFile() → importPreview</text>
+  <text x="1260" y="1330" class="component-desc">                                → importTasks()</text>
+  <text x="1260" y="1345" class="component-desc">初回ロード: MemoryAdapter でデモデータ表示</text>
+
+  <!-- Flow 4: Filter/Sort -->
+  <rect x="80" y="1380" width="600" height="130" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="1"/>
+  <text x="100" y="1405" class="component-title">④ フィルタ &amp; ソートフロー</text>
+  <text x="100" y="1425" class="component-desc">Header → FilterBar → フィルタ条件追加/変更/削除</text>
+  <text x="100" y="1445" class="component-desc">      ↓</text>
+  <text x="100" y="1460" class="component-desc">ViewStore.setFilters() / setSorts()</text>
+  <text x="100" y="1475" class="component-desc">      ↓</text>
+  <text x="100" y="1490" class="component-desc">useFilteredTasks() Hook がフィルタ済みタスクを返却</text>
+  <text x="100" y="1500" class="component-desc">各ビューコンポーネントが再レンダリング</text>
+
+  <!-- Flow 5: Field Management -->
+  <rect x="710" y="1380" width="500" height="130" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1"/>
+  <text x="730" y="1405" class="component-title">⑤ フィールド管理フロー</text>
+  <text x="730" y="1425" class="component-desc">Sidebar → FieldManager</text>
+  <text x="730" y="1445" class="component-desc">      ↓</text>
+  <text x="730" y="1460" class="component-desc">フィールド追加 / 表示切替 / D&amp;D並び替え / 削除</text>
+  <text x="730" y="1475" class="component-desc">      ↓</text>
+  <text x="730" y="1490" class="component-desc">TaskStore の fields 更新 → 全ビュー &amp; DetailPanel に反映</text>
+
+  <!-- Flow 6: Theme & i18n -->
+  <rect x="1240" y="1380" width="460" height="130" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+  <text x="1260" y="1405" class="component-title">⑥ テーマ &amp; 多言語切替</text>
+  <text x="1260" y="1425" class="component-desc">テーマ: Sidebar フッター → UIStore.toggleTheme()</text>
+  <text x="1260" y="1445" class="component-desc">      → document.documentElement.classList.toggle('dark')</text>
+  <text x="1260" y="1465" class="component-desc">言語: Header EN/JA ボタン → i18n.toggleLang()</text>
+  <text x="1260" y="1485" class="component-desc">      → localStorage に保存、全テキスト即時反映</text>
+  <text x="1260" y="1500" class="component-desc">対応: 日本語(ja) / 英語(en)</text>
+
+  <!-- Flow 7: New Task -->
+  <rect x="80" y="1535" width="600" height="100" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1"/>
+  <text x="100" y="1560" class="component-title">⑦ タスク追加フロー</text>
+  <text x="100" y="1580" class="component-desc">Header「＋タスク追加」/ テーブル行追加 / カンバン列内＋ / ガント空白クリック</text>
+  <text x="100" y="1600" class="component-desc">      ↓ TaskStore.addTask() → 新規タスク作成</text>
+  <text x="100" y="1620" class="component-desc">      ↓ UIStore.openDetailPanel(newTaskId) → 詳細パネルで即編集</text>
+
+  <!-- Flow 8: Sidebar Toggle -->
+  <rect x="710" y="1535" width="500" height="100" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+  <text x="730" y="1560" class="component-title">⑧ サイドバー開閉</text>
+  <text x="730" y="1580" class="component-desc">Header ☰ ボタン → UIStore.setSidebarOpen(true)</text>
+  <text x="730" y="1600" class="component-desc">Sidebar 「＜」ボタン → UIStore.toggleSidebar()</text>
+  <text x="730" y="1620" class="component-desc">幅: w-60 ↔ w-0 をアニメーションで遷移</text>
+
+  <!-- Footer Note -->
+  <text x="80" y="1780" class="subtitle">💡 このアプリはSPA（Single Page Application）のため、URL遷移はありません。すべての画面切替は Zustand Store の状態変更によるコンポーネント出し分けで実現されています。</text>
+</svg>
