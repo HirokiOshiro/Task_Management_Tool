@@ -29,6 +29,14 @@ export function DataSourceSelector() {
   } | null>(null)
   const [importMode, setImportMode] = useState<'append' | 'replace'>('append')
 
+  // エクスポートオプション用state
+  const [exportOptions, setExportOptions] = useState<{
+    format: 'json' | 'excel'
+    scope: 'all' | 'group'
+    groupFieldId?: string
+    groupValue?: string
+  } | null>(null)
+
   // ファイルが開かれているか（上書き保存可能か）
   const hasOpenFile = connection?.type === 'local' && adapter != null
 
@@ -80,12 +88,50 @@ export function DataSourceSelector() {
     }
   }, [adapter, connection, getDataSet, markClean, setLastSaved, setStatus, setError, addToast])
 
+  // エクスポートオプションダイアログを開く
+  const handleOpenExportDialog = useCallback((format: 'json' | 'excel') => {
+    setExportOptions({
+      format,
+      scope: 'all',
+      groupFieldId: undefined,
+      groupValue: undefined,
+    })
+  }, [])
+
+  // フィルタリングされたdataSetを生成
+  const getFilteredDataSet = useCallback(() => {
+    const data = getDataSet()
+
+    if (!exportOptions || exportOptions.scope === 'all') {
+      return data
+    }
+
+    // グループフィルタが指定されている場合
+    if (exportOptions.scope === 'group' && exportOptions.groupFieldId && exportOptions.groupValue) {
+      const filteredTasks = data.tasks.filter(
+        task => task.fieldValues[exportOptions.groupFieldId!] === exportOptions.groupValue
+      )
+      return {
+        ...data,
+        tasks: filteredTasks,
+      }
+    }
+
+    return data
+  }, [getDataSet, exportOptions])
+
   // JSONとして保存（fileSave経由。初回はピッカー、以降は上書き）
   const handleSaveJson = useCallback(async () => {
+    // エクスポートオプションダイアログを表示
+    if (!exportOptions) {
+      handleOpenExportDialog('json')
+      return
+    }
+
     try {
       setSaving(true)
       setStatus('saving')
-      const data = getDataSet()
+      const data = getFilteredDataSet()
       data.metadata.source = 'local'
       const json = JSON.stringify(data, null, 2)
       const blob = new Blob([json], { type: 'application/json' })
@@ -117,10 +163,12 @@ export function DataSourceSelector() {
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
+      setExportOptions(null) // ダイアログを閉じる
       addToast(t.data.savedJson, 'success')
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setStatus(hasOpenFile ? 'connected' : 'disconnected')
+        setExportOptions(null)
         return
       }
       const msg = String((err as Error).message ?? t.data.saveFailed)
@@ -129,14 +177,20 @@ export function DataSourceSelector() {
     } finally {
       setSaving(false)
     }
-  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
+  }, [exportOptions, getFilteredDataSet, handleOpenExportDialog, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
 
   // Excelとして保存（fileSave経由。初回はピッカー、以降は上書き）
   const handleSaveExcel = useCallback(async () => {
+    // エクスポートオプションダイアログを表示
+    if (!exportOptions) {
+      handleOpenExportDialog('excel')
+      return
+    }
+
     try {
       setSaving(true)
       setStatus('saving')
-      const data = getDataSet()
+      const data = getFilteredDataSet()
       data.metadata.source = 'local'
       const excelData = writeExcel(data)
       const blob = new Blob([excelData.buffer as ArrayBuffer], {
@@ -170,10 +224,12 @@ export function DataSourceSelector() {
       markClean()
       setLastSaved(new Date())
       setStatus('connected')
+      setExportOptions(null) // ダイアログを閉じる
       addToast(t.data.savedExcel, 'success')
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setStatus(hasOpenFile ? 'connected' : 'disconnected')
+        setExportOptions(null)
         return
       }
       const msg = String((err as Error).message ?? t.data.saveFailed)
@@ -182,7 +238,7 @@ export function DataSourceSelector() {
     } finally {
       setSaving(false)
     }
-  }, [getDataSet, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
+  }, [exportOptions, getFilteredDataSet, handleOpenExportDialog, markClean, setLastSaved, setStatus, setError, addToast, hasOpenFile, connection, setAdapter, setConnection, t])
 
   // デモデータに戻す
   const handleLoadDemo = useCallback(async () => {
@@ -403,6 +459,138 @@ export function DataSourceSelector() {
                 className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
               >
                 {t.data.importConfirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── エクスポートオプション ダイアログ ── */}
+      {exportOptions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-popover text-popover-foreground rounded-lg shadow-xl w-full max-w-md mx-4 p-5 space-y-4">
+            {/* ヘッダー */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold">
+                {exportOptions.format === 'json' ? 'JSON' : 'Excel'}エクスポートオプション
+              </h3>
+              <button
+                onClick={() => setExportOptions(null)}
+                className="p-1 rounded hover:bg-accent/50"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* エクスポート範囲選択 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">エクスポート範囲</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setExportOptions({ ...exportOptions, scope: 'all' })}
+                  className={`flex-1 py-1.5 text-sm rounded border ${
+                    exportOptions.scope === 'all'
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border hover:bg-accent/50'
+                  }`}
+                >
+                  すべてのタスク
+                </button>
+                <button
+                  onClick={() => setExportOptions({ ...exportOptions, scope: 'group' })}
+                  className={`flex-1 py-1.5 text-sm rounded border ${
+                    exportOptions.scope === 'group'
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border hover:bg-accent/50'
+                  }`}
+                >
+                  グループフィルタ
+                </button>
+              </div>
+            </div>
+
+            {/* グループフィルタ設定 */}
+            {exportOptions.scope === 'group' && (
+              <div className="space-y-3 bg-accent/20 rounded p-3">
+                {/* フィールド選択 */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    グループフィールド
+                  </label>
+                  <select
+                    value={exportOptions.groupFieldId || ''}
+                    onChange={(e) => {
+                      const fieldId = e.target.value
+                      setExportOptions({
+                        ...exportOptions,
+                        groupFieldId: fieldId || undefined,
+                        groupValue: undefined,
+                      })
+                    }}
+                    className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                  >
+                    <option value="">フィールドを選択...</option>
+                    {fields
+                      .filter((f) => f.type === 'select' || f.type === 'multi_select')
+                      .map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* 値選択 */}
+                {exportOptions.groupFieldId && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      グループ値
+                    </label>
+                    <select
+                      value={exportOptions.groupValue || ''}
+                      onChange={(e) =>
+                        setExportOptions({ ...exportOptions, groupValue: e.target.value || undefined })
+                      }
+                      className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                    >
+                      <option value="">値を選択...</option>
+                      {fields
+                        .find((f) => f.id === exportOptions.groupFieldId)
+                        ?.options?.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* 情報表示 */}
+                {exportOptions.groupFieldId && exportOptions.groupValue && (
+                  <p className="text-xs text-muted-foreground">
+                    選択された条件のタスクのみがエクスポートされます
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* アクションボタン */}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setExportOptions(null)}
+                className="px-3 py-1.5 text-sm rounded border border-border hover:bg-accent/50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={exportOptions.format === 'json' ? handleSaveJson : handleSaveExcel}
+                disabled={
+                  exportOptions.scope === 'group' &&
+                  (!exportOptions.groupFieldId || !exportOptions.groupValue)
+                }
+                className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                エクスポート
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
+import ReactMarkdown from 'react-markdown'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -476,9 +477,9 @@ function MemoSection({
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            rows={5}
-            className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y"
-            placeholder={t.taskDetail.memoPlaceholder}
+            rows={8}
+            className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y font-mono"
+            placeholder="Markdown記法が使えます&#10;&#10;- リスト項目1&#10;- リスト項目2&#10;&#10;**太字** _斜体_ `コード`&#10;&#10;[リンク](https://example.com)"
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setDraft(value ?? '')
@@ -506,11 +507,13 @@ function MemoSection({
         </div>
       ) : (
         <div
-          className="min-h-[60px] cursor-pointer rounded border border-transparent px-3 py-2 text-sm hover:border-border hover:bg-accent/30 transition-colors whitespace-pre-wrap"
+          className="min-h-[60px] cursor-pointer rounded border border-transparent px-3 py-2 text-sm hover:border-border hover:bg-accent/30 transition-colors"
           onClick={() => setEditing(true)}
         >
           {value ? (
-            <span className="text-foreground">{value}</span>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown>{value}</ReactMarkdown>
+            </div>
           ) : (
             <span className="text-muted-foreground/40">{t.taskDetail.memoClickToAdd}</span>
           )}
