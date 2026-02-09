@@ -27,10 +27,10 @@ export function Header() {
   const { t, lang, toggleLang } = useI18n()
 
   const viewTabs: { type: ViewType; label: string; icon: React.ReactNode }[] = [
-    { type: 'table', label: t.views.table, icon: <Table2 size={16} /> },
-    { type: 'kanban', label: t.views.kanban, icon: <LayoutGrid size={16} /> },
     { type: 'gantt', label: t.views.gantt, icon: <GanttChart size={16} /> },
+    { type: 'table', label: t.views.table, icon: <Table2 size={16} /> },
     { type: 'calendar', label: t.views.calendar, icon: <CalendarDays size={16} /> },
+    { type: 'kanban', label: t.views.kanban, icon: <LayoutGrid size={16} /> },
   ]
 
   return (

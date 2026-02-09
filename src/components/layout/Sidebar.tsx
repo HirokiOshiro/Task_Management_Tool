@@ -23,7 +23,7 @@ import { DataSourceSelector } from '@/components/data-source/DataSourceSelector'
 import type { ViewType } from '@/types/view'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 
-const VIEW_TYPES: ViewType[] = ['table', 'kanban', 'gantt', 'calendar']
+const VIEW_TYPES: ViewType[] = ['gantt', 'table', 'calendar', 'kanban']
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, theme, toggleTheme } = useUIStore()

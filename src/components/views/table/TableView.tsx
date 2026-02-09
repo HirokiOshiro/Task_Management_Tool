@@ -5,7 +5,7 @@ import { useViewStore } from '@/stores/view-store'
 import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { sanitizeUrl, sanitizeColor } from '@/lib/sanitize'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
@@ -143,6 +143,19 @@ function TaskRow({
 }) {
   const [fadingOut, setFadingOut] = useState(false)
 
+  // 開始日が変更されたときに期限を自動設定する
+  const handleUpdateTask = (taskId: string, fieldId: string, value: unknown) => {
+    updateTask(taskId, fieldId, value)
+
+    // 開始日が変更され、期限が未設定の場合は自動設定
+    if (fieldId === SYSTEM_FIELD_IDS.START_DATE && value) {
+      const dueDate = task.fieldValues[SYSTEM_FIELD_IDS.DUE_DATE]
+      if (!dueDate) {
+        updateTask(taskId, SYSTEM_FIELD_IDS.DUE_DATE, value)
+      }
+    }
+  }
+
   return (
     <tr
       className={cn(
@@ -175,7 +188,7 @@ function TaskRow({
             taskId={task.id}
             field={field}
             value={task.fieldValues[field.id]}
-            onUpdate={updateTask}
+            onUpdate={handleUpdateTask}
             onOpenDetail={
               field.id === SYSTEM_FIELD_IDS.TITLE
                 ? () => openDetailPanel(task.id)
@@ -215,6 +228,35 @@ function EditableCell({
         }}
         onCancel={() => setEditing(false)}
       />
+    )
+  }
+
+  // タイトルフィールドの場合は詳細画面アクセス用のUIを追加
+  if (field.id === SYSTEM_FIELD_IDS.TITLE && onOpenDetail) {
+    return (
+      <div className="group relative">
+        <div
+          className={cn(
+            'min-h-[24px] cursor-pointer rounded px-1 py-0.5 hover:bg-accent/50 transition-colors font-medium'
+          )}
+          onClick={() => setEditing(true)}
+          onDoubleClick={onOpenDetail}
+          title="ダブルクリックで詳細を開く"
+        >
+          <CellRenderer value={value} field={field} />
+        </div>
+        {/* ホバー時のヒントアイコン */}
+        <button
+          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpenDetail()
+          }}
+          title="詳細を開く"
+        >
+          <ExternalLink size={12} className="text-muted-foreground" />
+        </button>
+      </div>
     )
   }
 

@@ -37,6 +37,19 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
   const { updateTask, deleteTask } = useTaskStore()
   const { t, lang } = useI18n()
 
+  // 開始日が変更されたときに期限を自動設定する
+  const handleUpdateTask = (taskId: string, fieldId: string, value: unknown) => {
+    updateTask(taskId, fieldId, value)
+
+    // 開始日が変更され、期限が未設定の場合は自動設定
+    if (fieldId === SYSTEM_FIELD_IDS.START_DATE && value) {
+      const dueDate = task.fieldValues[SYSTEM_FIELD_IDS.DUE_DATE]
+      if (!dueDate) {
+        updateTask(taskId, SYSTEM_FIELD_IDS.DUE_DATE, value)
+      }
+    }
+  }
+
   return (
     <>
       {/* オーバーレイ */}
@@ -81,7 +94,7 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
                 taskId={task.id}
                 field={field}
                 value={task.fieldValues[field.id]}
-                onUpdate={updateTask}
+                onUpdate={handleUpdateTask}
               />
             ))}
           </div>

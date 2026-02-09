@@ -25,6 +25,21 @@ interface ViewState {
 function createDefaultViews(): ViewConfig[] {
   return [
     {
+      id: 'view-gantt',
+      name: 'ガント',
+      type: 'gantt',
+      sorts: [],
+      filters: [],
+      visibleFieldIds: [
+        SYSTEM_FIELD_IDS.TITLE,
+        SYSTEM_FIELD_IDS.STATUS,
+        SYSTEM_FIELD_IDS.ASSIGNEE,
+        SYSTEM_FIELD_IDS.PROGRESS,
+      ],
+      ganttStartFieldId: SYSTEM_FIELD_IDS.START_DATE,
+      ganttEndFieldId: SYSTEM_FIELD_IDS.DUE_DATE,
+    },
+    {
       id: 'view-table',
       name: 'テーブル',
       type: 'table',
@@ -47,6 +62,18 @@ function createDefaultViews(): ViewConfig[] {
       ],
     },
     {
+      id: 'view-calendar',
+      name: 'カレンダー',
+      type: 'calendar',
+      sorts: [],
+      filters: [],
+      visibleFieldIds: [
+        SYSTEM_FIELD_IDS.TITLE,
+        SYSTEM_FIELD_IDS.STATUS,
+        SYSTEM_FIELD_IDS.DUE_DATE,
+      ],
+    },
+    {
       id: 'view-kanban',
       name: 'カンバン',
       type: 'kanban',
@@ -59,33 +86,6 @@ function createDefaultViews(): ViewConfig[] {
         SYSTEM_FIELD_IDS.PRIORITY,
       ],
       kanbanGroupFieldId: SYSTEM_FIELD_IDS.STATUS,
-    },
-    {
-      id: 'view-gantt',
-      name: 'ガント',
-      type: 'gantt',
-      sorts: [],
-      filters: [],
-      visibleFieldIds: [
-        SYSTEM_FIELD_IDS.TITLE,
-        SYSTEM_FIELD_IDS.STATUS,
-        SYSTEM_FIELD_IDS.ASSIGNEE,
-        SYSTEM_FIELD_IDS.PROGRESS,
-      ],
-      ganttStartFieldId: SYSTEM_FIELD_IDS.START_DATE,
-      ganttEndFieldId: SYSTEM_FIELD_IDS.DUE_DATE,
-    },
-    {
-      id: 'view-calendar',
-      name: 'カレンダー',
-      type: 'calendar',
-      sorts: [],
-      filters: [],
-      visibleFieldIds: [
-        SYSTEM_FIELD_IDS.TITLE,
-        SYSTEM_FIELD_IDS.STATUS,
-        SYSTEM_FIELD_IDS.DUE_DATE,
-      ],
     },
   ]
 }
