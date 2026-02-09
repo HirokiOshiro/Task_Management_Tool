@@ -465,6 +465,81 @@ function MemoSection({
     setEditing(false)
   }
 
+  // キーボードショートカット処理
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget
+    const { selectionStart, selectionEnd, value } = textarea
+
+    // Escape: 編集キャンセル
+    if (e.key === 'Escape') {
+      setDraft(value ?? '')
+      setEditing(false)
+      return
+    }
+
+    // Tab: インデント追加
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault()
+      const newValue = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd)
+      setDraft(newValue)
+      // カーソル位置を調整
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = selectionStart + 2
+      }, 0)
+      return
+    }
+
+    // Shift+Tab: インデント削除
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault()
+      const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+      const lineText = value.substring(lineStart, selectionStart)
+      if (lineText.startsWith('  ')) {
+        const newValue = value.substring(0, lineStart) + lineText.substring(2) + value.substring(selectionStart)
+        setDraft(newValue)
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = selectionStart - 2
+        }, 0)
+      }
+      return
+    }
+
+    // Enter: 箇条書き自動継続
+    if (e.key === 'Enter') {
+      const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+      const currentLine = value.substring(lineStart, selectionStart)
+
+      // 箇条書きパターンを検出
+      const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.)\s/)
+      if (bulletMatch) {
+        e.preventDefault()
+        const indent = bulletMatch[1]
+        const bullet = bulletMatch[2]
+
+        // 現在行が箇条書きマーカーのみの場合は箇条書きを終了
+        if (currentLine.trim() === bulletMatch[0].trim()) {
+          const newValue = value.substring(0, lineStart) + value.substring(selectionStart)
+          setDraft(newValue)
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = lineStart
+          }, 0)
+          return
+        }
+
+        // 箇条書きを継続
+        const newBullet = bullet.match(/\d+/)
+          ? `${parseInt(bullet) + 1}.`
+          : bullet
+        const continuation = `\n${indent}${newBullet} `
+        const newValue = value.substring(0, selectionStart) + continuation + value.substring(selectionEnd)
+        setDraft(newValue)
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = selectionStart + continuation.length
+        }, 0)
+      }
+    }
+  }
+
   return (
     <div className="mt-6 border-t border-border pt-4">
       <div className="flex items-center gap-2 mb-2">
@@ -479,13 +554,8 @@ function MemoSection({
             onChange={(e) => setDraft(e.target.value)}
             rows={8}
             className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y font-mono"
-            placeholder="Markdown記法が使えます&#10;&#10;- リスト項目1&#10;- リスト項目2&#10;&#10;**太字** _斜体_ `コード`&#10;&#10;[リンク](https://example.com)"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setDraft(value ?? '')
-                setEditing(false)
-              }
-            }}
+            placeholder="Markdown記法が使えます&#10;&#10;- リスト項目1&#10;- リスト項目2&#10;&#10;**太字** _斜体_ `コード`&#10;&#10;Tab: インデント / Shift+Tab: インデント解除"
+            onKeyDown={handleKeyDown}
           />
           <div className="flex justify-end gap-2 mt-2">
             <button
