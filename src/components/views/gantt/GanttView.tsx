@@ -1,7 +1,8 @@
-import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import { useMemo, useState, useCallback, useRef, useEffect, Fragment } from 'react'
 import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
+import { useViewStore } from '@/stores/view-store'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import {
   differenceInDays,
@@ -17,8 +18,8 @@ import {
 import { ja } from 'date-fns/locale'
 import { enUS } from 'date-fns/locale'
 import { sanitizeColor } from '@/lib/sanitize'
-import { useI18n } from '@/i18n'
-import { CalendarDays, Plus } from 'lucide-react'
+import { useI18n, translateOptionLabel } from '@/i18n'
+import { CalendarDays, Plus, ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 
@@ -59,7 +60,12 @@ interface GanttTask {
   end: Date
   progress: number
   color: string
+  categoryId: string
 }
+
+type DisplayRow =
+  | { type: 'group-header'; groupId: string; label: string; color: string; taskCount: number; collapsed: boolean }
+  | { type: 'task'; task: GanttTask }
 
 /** インラインタスク作成状態 */
 interface InlineCreateState {
@@ -85,6 +91,8 @@ export function GanttView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { t, lang } = useI18n()
   const dateFnsLocale = lang === 'ja' ? ja : enUS
+  const activeView = useViewStore((s) => s.getActiveView())
+  const updateView = useViewStore((s) => s.updateView)
 
   // ガント用のタスクデータに変換
   const ganttTasks = useMemo(() => {
@@ -100,6 +108,7 @@ export function GanttView() {
         const status = task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string
         const statusField = fields.find((f) => f.id === SYSTEM_FIELD_IDS.STATUS)
         const statusOption = statusField?.options?.find((o) => o.id === status)
+        const categoryId = (task.fieldValues[SYSTEM_FIELD_IDS.CATEGORY] as string) ?? ''
 
         return {
           id: task.id,
@@ -108,6 +117,7 @@ export function GanttView() {
           end: end < start ? start : end,
           progress,
           color: sanitizeColor(statusOption?.color ?? '#3b82f6'),
+          categoryId,
         }
       })
       .filter(Boolean) as GanttTask[]
@@ -117,6 +127,93 @@ export function GanttView() {
   const sortedGanttTasks = useMemo(() => {
     return [...ganttTasks].sort((a, b) => a.start.getTime() - b.start.getTime())
   }, [ganttTasks])
+
+  // グループ化（業務別など）
+  const groupConfig = activeView.group
+  const groupField = fields.find((f) => f.id === groupConfig?.fieldId)
+
+  const groupedData = useMemo(() => {
+    if (!groupConfig || !groupField) return null
+
+    const options = groupField.options ?? []
+    const groups = new Map<string, GanttTask[]>()
+    for (const opt of options) groups.set(opt.id, [])
+    groups.set('__uncategorized__', [])
+
+    for (const task of sortedGanttTasks) {
+      const key = task.categoryId && groups.has(task.categoryId) ? task.categoryId : '__uncategorized__'
+      groups.get(key)!.push(task)
+    }
+
+    const collapsedMap = groupConfig.collapsed ?? {}
+    const result: { id: string; label: string; color: string; tasks: GanttTask[]; collapsed: boolean }[] = []
+
+    for (const opt of options) {
+      const tasks = groups.get(opt.id) ?? []
+      if (tasks.length === 0) continue
+      result.push({
+        id: opt.id,
+        label: translateOptionLabel(t, groupField.id, opt.id, opt.label),
+        color: sanitizeColor(opt.color),
+        tasks,
+        collapsed: !!collapsedMap[opt.id],
+      })
+    }
+
+    const uncategorized = groups.get('__uncategorized__') ?? []
+    if (uncategorized.length > 0) {
+      result.push({
+        id: '__uncategorized__',
+        label: t.kanban.uncategorized,
+        color: '#94a3b8',
+        tasks: uncategorized,
+        collapsed: !!collapsedMap['__uncategorized__'],
+      })
+    }
+
+    return result
+  }, [groupConfig, groupField, sortedGanttTasks, t])
+
+  // 表示行リスト（グループヘッダー + タスク行）
+  const displayRows = useMemo((): DisplayRow[] => {
+    if (!groupedData) {
+      return sortedGanttTasks.map((task) => ({ type: 'task' as const, task }))
+    }
+    const rows: DisplayRow[] = []
+    for (const group of groupedData) {
+      rows.push({
+        type: 'group-header',
+        groupId: group.id,
+        label: group.label,
+        color: group.color,
+        taskCount: group.tasks.length,
+        collapsed: group.collapsed,
+      })
+      if (!group.collapsed) {
+        for (const task of group.tasks) {
+          rows.push({ type: 'task', task })
+        }
+      }
+    }
+    return rows
+  }, [groupedData, sortedGanttTasks])
+
+  const toggleGroupCollapse = useCallback(
+    (groupId: string) => {
+      if (!groupConfig) return
+      const currentCollapsed = groupConfig.collapsed ?? {}
+      updateView(activeView.id, {
+        group: {
+          ...groupConfig,
+          collapsed: {
+            ...currentCollapsed,
+            [groupId]: !currentCollapsed[groupId],
+          },
+        },
+      })
+    },
+    [groupConfig, activeView.id, updateView]
+  )
 
   // 表示範囲計算（前後3ヶ月のパディング付き）
   const { minDate, totalDays } = useMemo(() => {
@@ -389,7 +486,9 @@ export function GanttView() {
 
         if (isRealDrag) {
           const newSelected = new Set<string>(upEvent.shiftKey ? selectedIds : undefined)
-          sortedGanttTasks.forEach((gt, rowIndex) => {
+          displayRows.forEach((row, rowIndex) => {
+            if (row.type !== 'task') return
+            const gt = row.task
             const barStartOffset = differenceInDays(gt.start, minDate)
             const barDuration = differenceInDays(gt.end, gt.start) + 1
             // バーのピクセル位置（タスク名列分オフセット）
@@ -415,7 +514,7 @@ export function GanttView() {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [sortedGanttTasks, minDate, selectedIds]
+    [displayRows, minDate, selectedIds]
   )
 
   /** マーキー矩形の CSS 用ピクセル座標 */
@@ -582,8 +681,45 @@ export function GanttView() {
           </div>
         </div>
 
-        {/* タスク行 */}
-        {sortedGanttTasks.map((task) => {
+        {/* タスク行（グループヘッダー含む） */}
+        {displayRows.map((row) => {
+          if (row.type === 'group-header') {
+            return (
+              <div
+                key={`group-${row.groupId}`}
+                className="flex border-b border-border bg-muted/30"
+                style={{ height: ROW_HEIGHT }}
+              >
+                <div
+                  className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-muted/30 px-2 cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                  style={{ height: ROW_HEIGHT }}
+                  onClick={() => toggleGroupCollapse(row.groupId)}
+                >
+                  {row.collapsed ? (
+                    <ChevronRight size={14} className="mr-1 text-muted-foreground flex-shrink-0" />
+                  ) : (
+                    <ChevronDown size={14} className="mr-1 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <span
+                    className="mr-2 h-2.5 w-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: row.color }}
+                  />
+                  <span className="text-xs font-medium truncate">{row.label}</span>
+                  <span className="ml-1.5 text-[10px] text-muted-foreground flex-shrink-0">({row.taskCount})</span>
+                </div>
+                <div className="relative flex-1">
+                  {todayOffset >= 0 && todayOffset < totalDays && (
+                    <div
+                      className="absolute top-0 h-full w-px bg-primary/50"
+                      style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                    />
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          const task = row.task
           const { start, end } = getDisplayDates(task)
           const startOffset = differenceInDays(start, minDate)
           const duration = differenceInDays(end, start) + 1

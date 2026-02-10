@@ -6,6 +6,23 @@ import type { ViewConfig } from '@/types/view'
 import { createDefaultFields } from '@/types/task'
 import { generateId } from '@/lib/id'
 
+/** 後方互換性: person フィールドの値を string から string[] に変換 */
+function migratePersonFields(tasks: Task[], fields: FieldDefinition[]): Task[] {
+  const personFieldIds = fields.filter(f => f.type === 'person').map(f => f.id)
+  if (personFieldIds.length === 0) return tasks
+  return tasks.map(task => {
+    let changed = false
+    const values = { ...task.fieldValues }
+    for (const id of personFieldIds) {
+      if (typeof values[id] === 'string') {
+        values[id] = [values[id]]
+        changed = true
+      }
+    }
+    return changed ? { ...task, fieldValues: values } : task
+  })
+}
+
 interface TaskState {
   tasks: Task[]
   fields: FieldDefinition[]
@@ -190,7 +207,7 @@ export const useTaskStore = create<TaskState>()(
 
     loadDataSet: (dataSet) => {
       set((state) => {
-        state.tasks = dataSet.tasks
+        state.tasks = migratePersonFields(dataSet.tasks, dataSet.fields)
         state.fields = dataSet.fields
         state.viewConfigs = dataSet.viewConfigs
         state.isLoaded = true
@@ -230,6 +247,63 @@ export const useTaskStore = create<TaskState>()(
       viewConfigs: state.viewConfigs,
       isLoaded: state.isLoaded,
     }),
+    onRehydrateStorage: () => (state) => {
+      if (state) {
+        let tasks = state.tasks
+        let fields = state.fields
+
+        // 1. person フィールドのマイグレーション (string → string[])
+        if (tasks.length > 0) {
+          const migrated = migratePersonFields(tasks, fields)
+          if (migrated !== tasks) tasks = migrated
+        }
+
+        // 2. 不足しているシステムフィールドを追加 (例: URL)
+        const defaultFields = createDefaultFields()
+        const existingIds = new Set(fields.map(f => f.id))
+        const missingFields = defaultFields.filter(
+          df => df.isSystem && !existingIds.has(df.id)
+        )
+
+        // 3. 既存システムフィールドのオプションをマージ (例: category)
+        let optionsUpdated = false
+        const updatedFields = fields.map(f => {
+          if (!f.isSystem) return f
+          const defaultField = defaultFields.find(df => df.id === f.id)
+          if (defaultField?.options && (!f.options || f.options.length === 0)) {
+            optionsUpdated = true
+            return { ...f, options: defaultField.options }
+          }
+          return f
+        })
+
+        // 4. システムフィールドの order をデフォルトに同期
+        const defaultOrderMap = new Map(defaultFields.map(df => [df.id, df.order]))
+        let orderUpdated = false
+        const reorderedFields = updatedFields.map(f => {
+          if (!f.isSystem) return f
+          const defaultOrder = defaultOrderMap.get(f.id)
+          if (defaultOrder !== undefined && f.order !== defaultOrder) {
+            orderUpdated = true
+            return { ...f, order: defaultOrder }
+          }
+          return f
+        })
+
+        const hasChanges =
+          tasks !== state.tasks ||
+          missingFields.length > 0 ||
+          optionsUpdated ||
+          orderUpdated
+
+        if (hasChanges) {
+          useTaskStore.setState({
+            tasks,
+            fields: [...reorderedFields, ...missingFields],
+          })
+        }
+      }
+    },
   }
   )
 )

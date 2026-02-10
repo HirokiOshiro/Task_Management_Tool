@@ -51,6 +51,8 @@ const FIELD_ID_TO_KEY: Record<string, keyof Locale['fieldNames']> = {
   start_date: 'startDate',
   dependencies: 'dependencies',
   notes: 'notes',
+  category: 'category',
+  url: 'url',
 }
 
 /** デフォルトビュータイプ → views キーのマッピング */
@@ -80,6 +82,7 @@ export function translateFieldName(t: Locale, fieldId: string, name: string): st
 export function translateOptionLabel(t: Locale, fieldId: string, optionId: string, label: string): string {
   if (fieldId === 'status' && t.status[optionId]) return t.status[optionId]
   if (fieldId === 'priority' && t.priority[optionId]) return t.priority[optionId]
+  if (fieldId === 'category' && t.category[optionId]) return t.category[optionId]
   return label
 }
 

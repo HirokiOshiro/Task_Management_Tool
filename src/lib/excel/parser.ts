@@ -159,6 +159,7 @@ export function inferFieldsFromHeaders(
     'Start Date': { id: 'start_date', type: 'date' },
     '業務': { id: 'category', type: 'select' },
     'Category': { id: 'category', type: 'select' },
+    'URL': { id: 'url', type: 'url' },
   }
 
   const defaults = createDefaultFields()
@@ -264,6 +265,7 @@ export function parseValue(raw: unknown, field: FieldDefinition): unknown {
       return ['true', 'yes', 'はい', 'done', '1'].includes(s)
     }
     case 'multi_select':
+    case 'person':
       return String(raw)
         .split(',')
         .map((s) => s.trim())

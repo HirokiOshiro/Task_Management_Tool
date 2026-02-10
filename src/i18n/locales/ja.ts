@@ -45,6 +45,7 @@ export const ja = {
     dependencies: '依存関係',
     notes: 'メモ',
     category: '業務',
+    url: 'URL',
   },
 
   // ── Status Options ──
@@ -60,6 +61,24 @@ export const ja = {
     high: '高',
     medium: '中',
     low: '低',
+  },
+
+  // ── Category Options ──
+  category: {
+    requirements: '要項',
+    pr: '広報',
+    web: 'Web',
+    application: '出願',
+    qualification: '資格',
+    conversion: '換算',
+    acceptance: '合格',
+    enrollment: '入学手続',
+    visit_here: '来校',
+    visit_out: '訪問',
+    event: 'イベント',
+    agreement: '協定',
+    system: 'システム',
+    meeting: '会議',
   },
 
   // ── Views ──
@@ -347,6 +366,7 @@ export type Locale = {
   fieldNames: Record<string, string>
   status: Record<string, string>
   priority: Record<string, string>
+  category: Record<string, string>
   views: {
     table: string
     kanban: string

@@ -47,6 +47,7 @@ export const en: Locale = {
     dependencies: 'Dependencies',
     notes: 'Notes',
     category: 'Category',
+    url: 'URL',
   },
 
   // ── Status Options ──
@@ -62,6 +63,24 @@ export const en: Locale = {
     high: 'High',
     medium: 'Medium',
     low: 'Low',
+  },
+
+  // ── Category Options ──
+  category: {
+    requirements: 'Requirements',
+    pr: 'PR',
+    web: 'Web',
+    application: 'Application',
+    qualification: 'Qualification',
+    conversion: 'Conversion',
+    acceptance: 'Acceptance',
+    enrollment: 'Enrollment',
+    visit_here: 'Visit (Incoming)',
+    visit_out: 'Visit (Outgoing)',
+    event: 'Event',
+    agreement: 'Agreement',
+    system: 'System',
+    meeting: 'Meeting',
   },
 
   // ── Views ──

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useViewStore } from '@/stores/view-store'
@@ -363,15 +363,22 @@ function CellRenderer({
         <span className="text-xs text-muted-foreground">{String(value)}</span>
       )
     }
-    case 'person':
+    case 'person': {
+      const persons = Array.isArray(value) ? value as string[] : (typeof value === 'string' ? [value] : [])
+      if (persons.length === 0) return <span className="text-muted-foreground/40">-</span>
       return (
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-            {String(value).charAt(0)}
-          </div>
-          <span className="text-sm">{String(value)}</span>
+        <div className="flex flex-wrap gap-1">
+          {persons.map((p, idx) => (
+            <div key={idx} className="flex items-center gap-1">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+                {p.charAt(0)}
+              </div>
+              <span className="text-xs">{p}</span>
+            </div>
+          ))}
         </div>
       )
+    }
     default:
       return <span className="text-sm">{String(value)}</span>
   }
@@ -410,7 +417,6 @@ function CellEditor({
 
   switch (field.type) {
     case 'text':
-    case 'person':
     case 'url':
       return (
         <input
@@ -425,6 +431,19 @@ function CellEditor({
           }}
         />
       )
+    case 'person': {
+      const currentPersons = Array.isArray(value) ? (value as string[]) : (typeof value === 'string' && value ? [value] : [])
+      return (
+        <MultiSelectEditor
+          options={[]}
+          value={currentPersons}
+          onSave={onSave}
+          onCancel={onCancel}
+          fieldType="person"
+          fieldId={field.id}
+        />
+      )
+    }
     case 'number':
       return (
         <input
@@ -524,16 +543,21 @@ function MultiSelectEditor({
   value,
   onSave,
   onCancel,
+  fieldType,
+  fieldId,
 }: {
   options: { id: string; label: string; color: string }[]
   value: string[]
   onSave: (value: unknown) => void
   onCancel: () => void
+  fieldType?: string
+  fieldId?: string
 }) {
   const [selected, setSelected] = useState<string[]>(value)
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const { t } = useI18n()
+  const { tasks } = useTaskStore()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -545,10 +569,34 @@ function MultiSelectEditor({
     )
   }
 
+  // person フィールドの場合、全タスクから過去の名前を候補に
+  const suggestedOptions = useMemo(() => {
+    if (fieldType === 'person' && fieldId) {
+      const allPersons = new Set<string>()
+      for (const task of tasks) {
+        const val = task.fieldValues[fieldId]
+        if (Array.isArray(val)) {
+          (val as string[]).forEach(p => allPersons.add(p))
+        } else if (typeof val === 'string' && val) {
+          allPersons.add(val)
+        }
+      }
+      return Array.from(allPersons)
+        .filter(p => !selected.includes(p))
+        .map(p => ({ id: p, label: p, color: '#3b82f6' }))
+    }
+    return options.filter(o => !selected.includes(o.label))
+  }, [fieldType, fieldId, tasks, options, selected])
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      if (inputValue.trim()) {
-        setSelected((prev) => [...prev, inputValue.trim()])
+      e.preventDefault()
+      const trimmed = inputValue.trim()
+      if (trimmed) {
+        const newTags = trimmed.split(/[,、]+/).map(s => s.trim()).filter(s => s.length > 0 && !selected.includes(s))
+        if (newTags.length > 0) {
+          setSelected((prev) => [...prev, ...newTags])
+        }
         setInputValue('')
       } else {
         onSave(selected.length > 0 ? selected : undefined)
@@ -565,7 +613,7 @@ function MultiSelectEditor({
           <span
             key={v}
             className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
-            onClick={() => toggle(v)}
+            onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
           >
             {v} &times;
           </span>
@@ -578,16 +626,22 @@ function MultiSelectEditor({
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onPaste={(e) => {
+          e.preventDefault()
+          const pastedText = e.clipboardData.getData('text')
+          const newTags = pastedText.split(/[,、]+/).map(s => s.trim()).filter(s => s.length > 0 && !selected.includes(s))
+          if (newTags.length > 0) {
+            setSelected((prev) => [...prev, ...newTags])
+          }
+        }}
         onBlur={() => onSave(selected.length > 0 ? selected : undefined)}
         placeholder={t.table.enterToAdd}
         className="w-full text-xs px-1 py-0.5 outline-none bg-transparent"
       />
-      {/* 既存オプション */}
-      {options.length > 0 && (
+      {/* 候補 */}
+      {suggestedOptions.length > 0 && (
         <div className="mt-1 border-t border-border pt-1 max-h-24 overflow-y-auto">
-          {options
-            .filter((o) => !selected.includes(o.label))
-            .map((o) => (
+          {suggestedOptions.map((o) => (
               <button
                 key={o.id}
                 className="block w-full text-left px-1 py-0.5 text-xs hover:bg-accent rounded"

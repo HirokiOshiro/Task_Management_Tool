@@ -59,7 +59,8 @@ function formatValue(value: unknown, field: FieldDefinition): unknown {
       const option = field.options?.find((o) => o.id === value)
       return option?.label ?? String(value)
     }
-    case 'multi_select': {
+    case 'multi_select':
+    case 'person': {
       if (Array.isArray(value)) return value.join(', ')
       return String(value)
     }

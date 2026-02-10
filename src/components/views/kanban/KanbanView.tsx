@@ -296,16 +296,22 @@ function KanbanCardContent({
         {String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? t.common.untitled)}
       </div>
 
-      {task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE] != null && (
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[9px] font-medium text-primary">
-            {String(task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE]).charAt(0)}
+      {(() => {
+        const raw = task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE]
+        const assignees: string[] = Array.isArray(raw) ? raw : (typeof raw === 'string' && raw ? [raw] : [])
+        return assignees.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {assignees.map((person, idx) => (
+              <div key={idx} className="flex items-center gap-1">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[9px] font-medium text-primary">
+                  {person.charAt(0)}
+                </div>
+                <span className="text-xs text-muted-foreground">{person}</span>
+              </div>
+            ))}
           </div>
-          <span className="text-xs text-muted-foreground">
-            {String(task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE])}
-          </span>
-        </div>
-      )}
+        )
+      })()}
 
       <div className="mt-2 flex items-center gap-2 flex-wrap">
         {task.fieldValues[SYSTEM_FIELD_IDS.DUE_DATE] != null && (

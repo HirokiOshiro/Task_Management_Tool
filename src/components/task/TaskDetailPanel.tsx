@@ -5,9 +5,10 @@ import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { sanitizeColor } from '@/lib/sanitize'
+import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -218,15 +219,38 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
         </div>
       )
     }
-    case 'person':
+    case 'person': {
+      const persons = Array.isArray(value) ? value as string[] : (typeof value === 'string' ? [value] : [])
+      if (persons.length === 0) return <span className="text-muted-foreground/40 text-sm">{t.taskDetail.empty}</span>
       return (
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-            {String(value).charAt(0)}
-          </div>
-          <span className="text-sm">{String(value)}</span>
+        <div className="flex flex-wrap gap-1">
+          {persons.map((p, idx) => (
+            <div key={idx} className="flex items-center gap-1 bg-accent/50 rounded-full px-2 py-0.5">
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[9px] font-medium text-primary">
+                {p.charAt(0)}
+              </div>
+              <span className="text-xs">{p}</span>
+            </div>
+          ))}
         </div>
       )
+    }
+    case 'url': {
+      const safeHref = sanitizeUrl(String(value))
+      return safeHref ? (
+        <a
+          href={safeHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline text-sm hover:text-primary/80 transition-colors break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {String(value)}
+        </a>
+      ) : (
+        <span className="text-sm text-muted-foreground">{String(value)}</span>
+      )
+    }
     default:
       return <span className="text-sm">{String(value)}</span>
   }
@@ -257,7 +281,6 @@ function DetailEditor({
 
   switch (field.type) {
     case 'text':
-    case 'person':
     case 'url':
       return field.id === 'description' ? (
         <textarea
@@ -317,6 +340,9 @@ function DetailEditor({
           onKeyDown={handleKeyDown}
         />
       )
+    case 'person':
+    case 'multi_select':
+      return <DetailMultiSelectEditor field={field} value={value} onSave={onSave} onCancel={onCancel} />
     case 'select':
       return (
         <select
@@ -334,8 +360,6 @@ function DetailEditor({
           ))}
         </select>
       )
-    case 'multi_select':
-      return <DetailMultiSelectEditor field={field} value={value} onSave={onSave} onCancel={onCancel} />
     default:
       return (
         <input
@@ -364,16 +388,36 @@ function DetailMultiSelectEditor({
   onSave: (value: unknown) => void
   onCancel: () => void
 }) {
-  const current = Array.isArray(value) ? (value as string[]) : []
+  const current = Array.isArray(value) ? (value as string[]) : (typeof value === 'string' && value ? [value] : [])
   const [selected, setSelected] = useState<string[]>(current)
   const [inputValue, setInputValue] = useState('')
   const { t } = useI18n()
+  const { tasks } = useTaskStore()
 
   const toggle = (v: string) => {
     setSelected((prev) =>
       prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
     )
   }
+
+  // person フィールドの場合、全タスクから過去の担当者名を候補として収集
+  const suggestedOptions = useMemo(() => {
+    if (field.type === 'person') {
+      const allPersons = new Set<string>()
+      for (const task of tasks) {
+        const val = task.fieldValues[field.id]
+        if (Array.isArray(val)) {
+          (val as string[]).forEach(p => allPersons.add(p))
+        } else if (typeof val === 'string' && val) {
+          allPersons.add(val)
+        }
+      }
+      return Array.from(allPersons)
+        .filter(p => !selected.includes(p))
+        .map(p => ({ id: p, label: p }))
+    }
+    return (field.options ?? []).filter(o => !selected.includes(o.label))
+  }, [field, tasks, selected])
 
   return (
     <div className="rounded border border-input bg-background p-2">
@@ -382,7 +426,7 @@ function DetailMultiSelectEditor({
           <span
             key={v}
             className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
-            onClick={() => toggle(v)}
+            onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
           >
             {v} &times;
           </span>
@@ -393,24 +437,37 @@ function DetailMultiSelectEditor({
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && inputValue.trim()) {
-            setSelected((prev) => [...prev, inputValue.trim()])
-            setInputValue('')
-          } else if (e.key === 'Enter') {
-            onSave(selected.length > 0 ? selected : undefined)
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            const trimmed = inputValue.trim()
+            if (trimmed) {
+              const newTags = trimmed.split(/[,、]+/).map(s => s.trim()).filter(s => s.length > 0 && !selected.includes(s))
+              if (newTags.length > 0) {
+                setSelected((prev) => [...prev, ...newTags])
+              }
+              setInputValue('')
+            } else {
+              onSave(selected.length > 0 ? selected : undefined)
+            }
           }
           if (e.key === 'Escape') onCancel()
+        }}
+        onPaste={(e) => {
+          e.preventDefault()
+          const pastedText = e.clipboardData.getData('text')
+          const newTags = pastedText.split(/[,、]+/).map(s => s.trim()).filter(s => s.length > 0 && !selected.includes(s))
+          if (newTags.length > 0) {
+            setSelected((prev) => [...prev, ...newTags])
+          }
         }}
         onBlur={() => onSave(selected.length > 0 ? selected : undefined)}
         placeholder={t.taskDetail.tagsPlaceholder}
         className="w-full text-sm outline-none bg-transparent"
         autoFocus
       />
-      {(field.options ?? []).length > 0 && (
+      {suggestedOptions.length > 0 && (
         <div className="mt-1 border-t border-border pt-1 max-h-24 overflow-y-auto">
-          {(field.options ?? [])
-            .filter((o) => !selected.includes(o.label))
-            .map((o) => (
+          {suggestedOptions.map((o) => (
               <button
                 key={o.id}
                 className="block w-full text-left px-1 py-0.5 text-xs hover:bg-accent rounded"
@@ -587,7 +644,21 @@ function MemoSection({
         >
           {value ? (
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <ReactMarkdown>{value}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children, ...props }) => {
+                    const safeHref = href ? sanitizeUrl(href) : undefined
+                    return safeHref ? (
+                      <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>
+                        {children}
+                      </a>
+                    ) : (
+                      <span>{children}</span>
+                    )
+                  },
+                }}
+              >{value}</ReactMarkdown>
             </div>
           ) : (
             <span className="text-muted-foreground/40">{t.taskDetail.memoClickToAdd}</span>

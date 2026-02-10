@@ -15,36 +15,37 @@ Key entry points and modules:
 ## Diagram 1: Component/State/Data Overview
 ```mermaid
 flowchart TB
-  subgraph UI[UI Layer]
-    App[App.tsx]
-    Shell[AppShell]
-    Views[ViewContainer]
-    Table[TableView]
-    Kanban[KanbanView]
-    Gantt[GanttView]
-    Calendar[CalendarView]
-    DataSource[DataSourceSelector]
-    StatusBar[StatusBar]
+  subgraph UI["UI Layer"]
+    App["App.tsx"]
+    Shell["AppShell"]
+    Views["ViewContainer"]
+    Table["TableView"]
+    Kanban["KanbanView"]
+    Gantt["GanttView"]
+    Calendar["CalendarView"]
+    DataSource["DataSourceSelector"]
+    StatusBar["StatusBar"]
   end
 
-  subgraph State[Client State (Zustand)]
-    TaskStore[Task Store\n(tasks/fields/viewConfigs/isDirty)]
-    ViewStore[View Store\n(active view/sort/filter/group)]
-    UIStore[UI Store\n(theme/sidebar/selection)]
-    ConnStore[Connection Store\n(adapter/status/lastSaved)]
-    I18n[I18n Store\n(lang/translations)]
+  subgraph State["Client State (Zustand)"]
+    TaskStore["Task Store<br/>(tasks/fields/viewConfigs/isDirty)"]
+    ViewStore["View Store<br/>(active view/sort/filter/group)"]
+    UIStore["UI Store<br/>(theme/sidebar/selection)"]
+    ConnStore["Connection Store<br/>(adapter/status/lastSaved)"]
+    I18n["I18n Store<br/>(lang/translations)"]
   end
 
-  subgraph Adapters[Data Adapters]
-    Memory[MemoryAdapter\n(demo dataset)]
-    Local[LocalFileAdapter\n(JSON/XLSX via File System Access)]
+  subgraph Adapters["Data Adapters"]
+    Memory["MemoryAdapter<br/>(demo dataset)"]
+    Local["LocalFileAdapter<br/>(JSON/XLSX via File System Access)"]
   end
 
-  subgraph Files[User Files]
-    JSON[JSON file]
-    XLSX[Excel file]
+  subgraph Files["User Files"]
+    JSON["JSON file"]
+    XLSX["Excel file"]
   end
 
+  %% Relationships
   App --> Shell --> Views
   Views --> Table
   Views --> Kanban
@@ -78,18 +79,18 @@ flowchart TB
 sequenceDiagram
   participant U as User
   participant App as App.tsx
-  participant Task as Task Store
-  participant Persist as localStorage(task-storage)
+  participant Task as "Task Store"
+  participant Persist as "localStorage(task-storage)"
   participant Mem as MemoryAdapter
 
   U->>App: Open page
   App->>Persist: hasPersistedData?
   alt persisted data exists
-    Persist-->>Task: rehydrate state (zustand persist)
+    Persist-->>Task: "rehydrate state (zustand persist)"
     Task-->>App: isLoaded=true
   else no persisted data
     App->>Mem: load()
-    Mem-->>Task: demo TaskDataSet
+    Mem-->>Task: "demo TaskDataSet"
     Task-->>App: isLoaded=true
   end
 ```

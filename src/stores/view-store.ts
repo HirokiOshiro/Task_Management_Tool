@@ -30,6 +30,10 @@ function createDefaultViews(): ViewConfig[] {
       type: 'gantt',
       sorts: [],
       filters: [],
+      group: {
+        fieldId: SYSTEM_FIELD_IDS.CATEGORY,
+        collapsed: {},
+      },
       visibleFieldIds: [
         SYSTEM_FIELD_IDS.TITLE,
         SYSTEM_FIELD_IDS.STATUS,
@@ -54,11 +58,13 @@ function createDefaultViews(): ViewConfig[] {
       ],
       visibleFieldIds: [
         SYSTEM_FIELD_IDS.TITLE,
+        SYSTEM_FIELD_IDS.CATEGORY,
         SYSTEM_FIELD_IDS.STATUS,
         SYSTEM_FIELD_IDS.START_DATE,
         SYSTEM_FIELD_IDS.DUE_DATE,
         SYSTEM_FIELD_IDS.ASSIGNEE,
         SYSTEM_FIELD_IDS.TAGS,
+        SYSTEM_FIELD_IDS.URL,
       ],
     },
     {
