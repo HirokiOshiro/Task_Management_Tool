@@ -419,6 +419,11 @@ export type Locale = {
   fieldManager: {
     title: string
     addField: string
+    editOptions: string
+    optionsLabel: string
+    optionPlaceholder: string
+    tagOptionPlaceholder: string
+    deleteOptionConfirm: string
     hide: string
     show: string
     deleteField: string
