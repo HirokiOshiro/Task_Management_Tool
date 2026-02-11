@@ -15,7 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useTaskStore } from '@/stores/task-store'
 import { useViewStore } from '@/stores/view-store'
-import type { FieldType, FieldDefinition } from '@/types/task'
+import type { FieldDefinition } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n, translateFieldName } from '@/i18n'
@@ -165,7 +165,6 @@ function SortableFieldItem({
   onDelete: () => void
 }) {
   const { t } = useI18n()
-  const FIELD_TYPE_LABELS: Record<FieldType, string> = t.fieldTypes
   const {
     attributes,
     listeners,
@@ -185,7 +184,7 @@ function SortableFieldItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group grid grid-cols-[16px_minmax(0,1fr)_96px_auto] items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50 text-sm',
+        'group grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50 text-sm',
         isDragging && 'opacity-50 bg-accent/30'
       )}
     >
@@ -198,9 +197,6 @@ function SortableFieldItem({
       </div>
       <span className={cn('truncate', !field.visible && 'text-muted-foreground/50')}>
         {translateFieldName(t, field.id, field.name)}
-      </span>
-      <span className="text-[10px] text-muted-foreground text-left">
-        {FIELD_TYPE_LABELS[field.type]}
       </span>
       <div className="flex items-center justify-end gap-1">
         {(field.type === 'select' || field.type === 'multi_select') && (

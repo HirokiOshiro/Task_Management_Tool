@@ -20,7 +20,7 @@ export function TableView() {
   const activeView = useViewStore((s) => s.getActiveView())
   const { setSorts } = useViewStore()
   const { t } = useI18n()
-  const [optionEditField, setOptionEditField] = useState<FieldDefinition | null>(null)
+  const [optionEditFieldId, setOptionEditFieldId] = useState<string | null>(null)
 
   const visibleFields = fields
     .filter((f) => activeView.visibleFieldIds.includes(f.id))
@@ -106,7 +106,7 @@ export function TableView() {
               updateTask={updateTask}
               deleteTask={deleteTask}
               openDetailPanel={openDetailPanel}
-              onEditOptions={(field) => setOptionEditField(field)}
+              onEditOptions={(field) => setOptionEditFieldId(field.id)}
               t={t}
             />
           ))}
@@ -125,8 +125,8 @@ export function TableView() {
         </tbody>
       </table>
       <FieldOptionModal
-        field={optionEditField}
-        onClose={() => setOptionEditField(null)}
+        fieldId={optionEditFieldId}
+        onClose={() => setOptionEditFieldId(null)}
         onUpdateOptions={updateFieldOptions}
       />
     </div>

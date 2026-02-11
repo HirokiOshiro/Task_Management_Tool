@@ -1,20 +1,23 @@
 import { X } from 'lucide-react'
-import type { FieldDefinition } from '@/types/task'
+import { useTaskStore } from '@/stores/task-store'
 import { FieldOptionEditor } from './FieldOptionEditor'
 import { useI18n, translateFieldName } from '@/i18n'
 
 type Option = { id: string; label: string; color: string }
 
 export function FieldOptionModal({
-  field,
+  fieldId,
   onClose,
   onUpdateOptions,
 }: {
-  field: FieldDefinition | null
+  fieldId: string | null
   onClose: () => void
   onUpdateOptions: (fieldId: string, options: Option[]) => void
 }) {
   const { t } = useI18n()
+  const field = useTaskStore(
+    (state) => state.fields.find((f) => f.id === fieldId) ?? null
+  )
 
   if (!field) return null
 

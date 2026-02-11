@@ -38,7 +38,7 @@ export function TaskDetailPanel() {
 function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof useTaskStore.getState>['tasks'][number]; sortedFields: ReturnType<typeof useTaskStore.getState>['fields'] }) {
   const { closeDetailPanel } = useUIStore()
   const { updateTask, deleteTask, updateFieldOptions } = useTaskStore()
-  const [optionEditField, setOptionEditField] = useState<FieldDefinition | null>(null)
+  const [optionEditFieldId, setOptionEditFieldId] = useState<string | null>(null)
   const { t, lang } = useI18n()
 
   // 開始日が変更されたときに期限を自動設定する
@@ -99,7 +99,7 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
                 field={field}
                 value={task.fieldValues[field.id]}
                 onUpdate={handleUpdateTask}
-                onEditOptions={() => setOptionEditField(field)}
+                onEditOptions={() => setOptionEditFieldId(field.id)}
               />
             ))}
           </div>
@@ -120,8 +120,8 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
         </div>
       </div>
       <FieldOptionModal
-        field={optionEditField}
-        onClose={() => setOptionEditField(null)}
+        fieldId={optionEditFieldId}
+        onClose={() => setOptionEditFieldId(null)}
         onUpdateOptions={updateFieldOptions}
       />
     </>
