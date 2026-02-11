@@ -5,20 +5,22 @@ import { useViewStore } from '@/stores/view-store'
 import { useFilteredTasks } from '@/hooks/useFilteredTasks'
 import type { FieldDefinition, Task } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { sanitizeUrl, sanitizeColor } from '@/lib/sanitize'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 import type { Locale } from '@/i18n/locales/ja'
+import { FieldOptionModal } from '@/components/fields/FieldOptionModal'
 
 export function TableView() {
-  const { addTask, deleteTask, updateTask, updateField } = useTaskStore()
+  const { addTask, deleteTask, updateTask, updateField, updateFieldOptions } = useTaskStore()
   const { filteredTasks, fields } = useFilteredTasks()
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
   const activeView = useViewStore((s) => s.getActiveView())
   const { setSorts } = useViewStore()
   const { t } = useI18n()
+  const [optionEditField, setOptionEditField] = useState<FieldDefinition | null>(null)
 
   const visibleFields = fields
     .filter((f) => activeView.visibleFieldIds.includes(f.id))
@@ -104,6 +106,7 @@ export function TableView() {
               updateTask={updateTask}
               deleteTask={deleteTask}
               openDetailPanel={openDetailPanel}
+              onEditOptions={(field) => setOptionEditField(field)}
               t={t}
             />
           ))}
@@ -121,6 +124,11 @@ export function TableView() {
           </tr>
         </tbody>
       </table>
+      <FieldOptionModal
+        field={optionEditField}
+        onClose={() => setOptionEditField(null)}
+        onUpdateOptions={updateFieldOptions}
+      />
     </div>
   )
 }
@@ -132,6 +140,7 @@ function TaskRow({
   updateTask,
   deleteTask,
   openDetailPanel,
+  onEditOptions,
   t,
 }: {
   task: Task
@@ -139,6 +148,7 @@ function TaskRow({
   updateTask: (taskId: string, fieldId: string, value: unknown) => void
   deleteTask: (taskId: string) => void
   openDetailPanel: (taskId: string) => void
+  onEditOptions: (field: FieldDefinition) => void
   t: Locale
 }) {
   const [fadingOut, setFadingOut] = useState(false)
@@ -189,6 +199,7 @@ function TaskRow({
             field={field}
             value={task.fieldValues[field.id]}
             onUpdate={handleUpdateTask}
+            onEditOptions={onEditOptions}
             onOpenDetail={
               field.id === SYSTEM_FIELD_IDS.TITLE
                 ? () => openDetailPanel(task.id)
@@ -207,12 +218,14 @@ function EditableCell({
   field,
   value,
   onUpdate,
+  onEditOptions,
   onOpenDetail,
 }: {
   taskId: string
   field: FieldDefinition
   value: unknown
   onUpdate: (taskId: string, fieldId: string, value: unknown) => void
+  onEditOptions: (field: FieldDefinition) => void
   onOpenDetail?: () => void
 }) {
   const [editing, setEditing] = useState(false)
@@ -227,6 +240,7 @@ function EditableCell({
           setEditing(false)
         }}
         onCancel={() => setEditing(false)}
+        onEditOptions={onEditOptions}
       />
     )
   }
@@ -390,11 +404,13 @@ function CellEditor({
   value,
   onSave,
   onCancel,
+  onEditOptions,
 }: {
   field: FieldDefinition
   value: unknown
   onSave: (value: unknown) => void
   onCancel: () => void
+  onEditOptions: (field: FieldDefinition) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -494,20 +510,31 @@ function CellEditor({
       )
     case 'select':
       return (
-        <select
-          defaultValue={value != null ? String(value) : ''}
-          className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onChange={(e) => onSave(e.target.value || undefined)}
-          onBlur={() => onCancel()}
-          autoFocus
-        >
-          <option value="">-</option>
-          {field.options?.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {translateOptionLabel(t, field.id, opt.id, opt.label)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <select
+            defaultValue={value != null ? String(value) : ''}
+            className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+            onChange={(e) => onSave(e.target.value || undefined)}
+            onBlur={() => onCancel()}
+            autoFocus
+          >
+            <option value="">-</option>
+            {field.options?.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {translateOptionLabel(t, field.id, opt.id, opt.label)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="rounded p-1 text-muted-foreground hover:bg-accent"
+            title={t.fieldManager.editOptions}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onEditOptions(field)}
+          >
+            <SlidersHorizontal size={14} />
+          </button>
+        </div>
       )
     case 'multi_select': {
       const current = Array.isArray(value) ? (value as string[]) : []
@@ -517,6 +544,8 @@ function CellEditor({
           value={current}
           onSave={onSave}
           onCancel={onCancel}
+          onEditOptions={() => onEditOptions(field)}
+          allowEditOptions={true}
         />
       )
     }
@@ -543,6 +572,8 @@ function MultiSelectEditor({
   value,
   onSave,
   onCancel,
+  onEditOptions,
+  allowEditOptions,
   fieldType,
   fieldId,
 }: {
@@ -550,6 +581,8 @@ function MultiSelectEditor({
   value: string[]
   onSave: (value: unknown) => void
   onCancel: () => void
+  onEditOptions?: () => void
+  allowEditOptions?: boolean
   fieldType?: string
   fieldId?: string
 }) {
@@ -608,16 +641,29 @@ function MultiSelectEditor({
   return (
     <div className="rounded border border-input bg-background p-1.5 shadow-lg">
       {/* 選択済み */}
-      <div className="flex flex-wrap gap-1 mb-1">
-        {selected.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
-            onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="flex flex-wrap gap-1">
+          {selected.map((v) => (
+            <span
+              key={v}
+              className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
+              onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
+            >
+              {v} &times;
+            </span>
+          ))}
+        </div>
+        {allowEditOptions && onEditOptions && (
+          <button
+            type="button"
+            className="rounded p-1 text-muted-foreground hover:bg-accent"
+            title={t.fieldManager.editOptions}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onEditOptions}
           >
-            {v} &times;
-          </span>
-        ))}
+            <SlidersHorizontal size={14} />
+          </button>
+        )}
       </div>
       {/* 入力 */}
       <input

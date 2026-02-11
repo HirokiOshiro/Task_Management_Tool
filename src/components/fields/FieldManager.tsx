@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -19,8 +19,7 @@ import type { FieldType, FieldDefinition } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n, translateFieldName } from '@/i18n'
-import { generateId } from '@/lib/id'
-import { sanitizeColor } from '@/lib/sanitize'
+import { FieldOptionEditor } from '@/components/fields/FieldOptionEditor'
 
 export function FieldManager() {
   const { fields, addField, updateField, updateFieldOptions, deleteField, reorderFields } = useTaskStore()
@@ -109,7 +108,9 @@ export function FieldManager() {
                   onDelete={() => deleteField(field.id)}
                 />
                 {openFieldIds.includes(field.id) && (field.type === 'select' || field.type === 'multi_select') && (
-                  <OptionEditor field={field} onUpdateOptions={updateFieldOptions} />
+                  <div className="ml-6 mt-1">
+                    <FieldOptionEditor field={field} onUpdateOptions={updateFieldOptions} />
+                  </div>
                 )}
               </div>
             ))}
@@ -184,7 +185,7 @@ function SortableFieldItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-accent/50 text-sm',
+        'group grid grid-cols-[16px_minmax(0,1fr)_96px_auto] items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50 text-sm',
         isDragging && 'opacity-50 bg-accent/30'
       )}
     >
@@ -195,232 +196,39 @@ function SortableFieldItem({
       >
         <GripVertical size={12} className="text-muted-foreground/30 flex-shrink-0" />
       </div>
-      <span className={cn('flex-1 truncate', !field.visible && 'text-muted-foreground/50')}>
+      <span className={cn('truncate', !field.visible && 'text-muted-foreground/50')}>
         {translateFieldName(t, field.id, field.name)}
       </span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-[10px] text-muted-foreground text-left">
         {FIELD_TYPE_LABELS[field.type]}
       </span>
-      {(field.type === 'select' || field.type === 'multi_select') && (
+      <div className="flex items-center justify-end gap-1">
+        {(field.type === 'select' || field.type === 'multi_select') && (
+          <button
+            onClick={onToggleOptions}
+            className="rounded p-0.5 text-muted-foreground opacity-70 hover:opacity-100 hover:text-foreground"
+            title={showOptions ? t.common.close : t.fieldManager.editOptions}
+          >
+            <SlidersHorizontal size={12} />
+          </button>
+        )}
         <button
-          onClick={onToggleOptions}
-          className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-          title={showOptions ? t.common.close : t.fieldManager.editOptions}
+          onClick={onToggleVisibility}
+          className="rounded p-0.5 text-muted-foreground opacity-70 hover:opacity-100 hover:text-foreground"
+          title={field.visible ? t.fieldManager.hide : t.fieldManager.show}
         >
-          <SlidersHorizontal size={12} />
+          {field.visible ? <Eye size={12} /> : <EyeOff size={12} />}
         </button>
-      )}
-      {/* 表示/非表示 */}
-      <button
-        onClick={onToggleVisibility}
-        className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-        title={field.visible ? t.fieldManager.hide : t.fieldManager.show}
-      >
-        {field.visible ? <Eye size={12} /> : <EyeOff size={12} />}
-      </button>
-      {/* 削除（システムフィールド以外） */}
-      {!field.isSystem && (
-        <button
-          onClick={onDelete}
-          className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
-          title={t.fieldManager.deleteField}
-        >
-          <Trash2 size={12} />
-        </button>
-      )}
-    </div>
-  )
-}
-
-function OptionEditor({
-  field,
-  onUpdateOptions,
-}: {
-  field: FieldDefinition
-  onUpdateOptions: (fieldId: string, options: { id: string; label: string; color: string }[]) => void
-}) {
-  const { t } = useI18n()
-  const [newLabel, setNewLabel] = useState('')
-  const options = useMemo(() => field.options ?? [], [field.options])
-  const optionIds = options.map((o) => o.id)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      if (!over || active.id === over.id) return
-
-      const oldIndex = optionIds.indexOf(String(active.id))
-      const newIndex = optionIds.indexOf(String(over.id))
-      if (oldIndex === -1 || newIndex === -1) return
-
-      const next = [...options]
-      const [moved] = next.splice(oldIndex, 1)
-      next.splice(newIndex, 0, moved)
-      onUpdateOptions(field.id, next)
-    },
-    [field.id, onUpdateOptions, optionIds, options]
-  )
-
-  const handleAdd = useCallback(() => {
-    const trimmed = newLabel.trim()
-    if (!trimmed) return
-    const next = [
-      ...options,
-      { id: generateId(), label: trimmed, color: '#94a3b8' },
-    ]
-    onUpdateOptions(field.id, next)
-    setNewLabel('')
-  }, [field.id, newLabel, onUpdateOptions, options])
-
-  const handleDelete = useCallback(
-    (optionId: string) => {
-      if (!window.confirm(t.fieldManager.deleteOptionConfirm)) return
-      onUpdateOptions(field.id, options.filter((o) => o.id !== optionId))
-    },
-    [field.id, onUpdateOptions, options, t]
-  )
-
-  return (
-    <div className="ml-4 mt-1 rounded border border-border bg-background/50 p-2">
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-        {t.fieldManager.optionsLabel}
+        {!field.isSystem && (
+          <button
+            onClick={onDelete}
+            className="rounded p-0.5 text-muted-foreground opacity-70 hover:opacity-100 hover:text-destructive"
+            title={t.fieldManager.deleteField}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext items={optionIds} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1">
-            {options.map((option) => (
-              <SortableOptionItem
-                key={option.id}
-                option={option}
-                allowColor={field.type === 'select'}
-                onDelete={() => handleDelete(option.id)}
-                onUpdate={(updates) => {
-                  const next = options.map((o) =>
-                    o.id === option.id ? { ...o, ...updates } : o
-                  )
-                  onUpdateOptions(field.id, next)
-                }}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-      <div className="mt-2 flex items-center gap-2">
-        <input
-          type="text"
-          value={newLabel}
-          onChange={(e) => setNewLabel(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              handleAdd()
-            }
-          }}
-          placeholder={
-            field.type === 'multi_select'
-              ? t.fieldManager.tagOptionPlaceholder
-              : t.fieldManager.optionPlaceholder
-          }
-          className="flex-1 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-        />
-        <button
-          onClick={handleAdd}
-          className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90"
-        >
-          {t.common.add}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function SortableOptionItem({
-  option,
-  allowColor,
-  onUpdate,
-  onDelete,
-}: {
-  option: { id: string; label: string; color: string }
-  allowColor: boolean
-  onUpdate: (updates: { label?: string; color?: string }) => void
-  onDelete: () => void
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: option.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  const safeColor = sanitizeColor(option.color ?? '#94a3b8')
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        'group flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs',
-        isDragging && 'opacity-50'
-      )}
-    >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing"
-      >
-        <GripVertical size={12} className="text-muted-foreground/40" />
-      </div>
-      <input
-        key={`${option.id}-${option.label}`}
-        defaultValue={option.label}
-        className="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-        onBlur={(e) => {
-          const trimmed = e.currentTarget.value.trim()
-          if (!trimmed) {
-            e.currentTarget.value = option.label
-            return
-          }
-          if (trimmed !== option.label) {
-            onUpdate({ label: trimmed })
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur()
-          }
-        }}
-      />
-      {allowColor && (
-        <input
-          type="color"
-          value={safeColor}
-          onChange={(e) => onUpdate({ color: sanitizeColor(e.target.value) })}
-          className="h-5 w-6 border border-border rounded"
-          aria-label="Option color"
-        />
-      )}
-      <button
-        onClick={onDelete}
-        className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
-        title="Delete option"
-      >
-        <Trash2 size={12} />
-      </button>
     </div>
   )
 }

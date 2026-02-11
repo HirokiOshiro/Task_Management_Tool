@@ -2,13 +2,14 @@ import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { X, Trash2, StickyNote } from 'lucide-react'
+import { X, Trash2, StickyNote, SlidersHorizontal } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { FieldOptionModal } from '@/components/fields/FieldOptionModal'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -36,7 +37,8 @@ export function TaskDetailPanel() {
 
 function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof useTaskStore.getState>['tasks'][number]; sortedFields: ReturnType<typeof useTaskStore.getState>['fields'] }) {
   const { closeDetailPanel } = useUIStore()
-  const { updateTask, deleteTask } = useTaskStore()
+  const { updateTask, deleteTask, updateFieldOptions } = useTaskStore()
+  const [optionEditField, setOptionEditField] = useState<FieldDefinition | null>(null)
   const { t, lang } = useI18n()
 
   // 開始日が変更されたときに期限を自動設定する
@@ -97,6 +99,7 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
                 field={field}
                 value={task.fieldValues[field.id]}
                 onUpdate={handleUpdateTask}
+                onEditOptions={() => setOptionEditField(field)}
               />
             ))}
           </div>
@@ -116,6 +119,11 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
           {t.taskDetail.updated} {new Date(task.updatedAt).toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US')}
         </div>
       </div>
+      <FieldOptionModal
+        field={optionEditField}
+        onClose={() => setOptionEditField(null)}
+        onUpdateOptions={updateFieldOptions}
+      />
     </>
   )
 }
@@ -126,11 +134,13 @@ function DetailField({
   field,
   value,
   onUpdate,
+  onEditOptions,
 }: {
   taskId: string
   field: FieldDefinition
   value: unknown
   onUpdate: (taskId: string, fieldId: string, value: unknown) => void
+  onEditOptions: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const { t } = useI18n()
@@ -150,6 +160,7 @@ function DetailField({
               setEditing(false)
             }}
             onCancel={() => setEditing(false)}
+            onEditOptions={onEditOptions}
           />
         ) : (
           <div
@@ -262,11 +273,13 @@ function DetailEditor({
   value,
   onSave,
   onCancel,
+  onEditOptions,
 }: {
   field: FieldDefinition
   value: unknown
   onSave: (value: unknown) => void
   onCancel: () => void
+  onEditOptions: () => void
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
   const { t } = useI18n()
@@ -342,23 +355,44 @@ function DetailEditor({
       )
     case 'person':
     case 'multi_select':
-      return <DetailMultiSelectEditor field={field} value={value} onSave={onSave} onCancel={onCancel} />
+      return (
+        <DetailMultiSelectEditor
+          field={field}
+          value={value}
+          onSave={onSave}
+          onCancel={onCancel}
+          onEditOptions={onEditOptions}
+        />
+      )
     case 'select':
       return (
-        <select
-          defaultValue={value != null ? String(value) : ''}
-          className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onChange={(e) => onSave(e.target.value || undefined)}
-          onBlur={() => onCancel()}
-          autoFocus
-        >
-          <option value="">-</option>
-          {field.options?.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {translateOptionLabel(t, field.id, opt.id, opt.label)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <select
+            defaultValue={value != null ? String(value) : ''}
+            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+            onChange={(e) => onSave(e.target.value || undefined)}
+            onBlur={() => onCancel()}
+            autoFocus
+          >
+            <option value="">-</option>
+            {field.options?.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {translateOptionLabel(t, field.id, opt.id, opt.label)}
+              </option>
+            ))}
+          </select>
+          {(field.type === 'select' || field.type === 'multi_select') && (
+            <button
+              type="button"
+              className="rounded p-1 text-muted-foreground hover:bg-accent"
+              title={t.fieldManager.editOptions}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onEditOptions}
+            >
+              <SlidersHorizontal size={14} />
+            </button>
+          )}
+        </div>
       )
     default:
       return (
@@ -382,11 +416,13 @@ function DetailMultiSelectEditor({
   value,
   onSave,
   onCancel,
+  onEditOptions,
 }: {
   field: FieldDefinition
   value: unknown
   onSave: (value: unknown) => void
   onCancel: () => void
+  onEditOptions: () => void
 }) {
   const current = Array.isArray(value) ? (value as string[]) : (typeof value === 'string' && value ? [value] : [])
   const [selected, setSelected] = useState<string[]>(current)
@@ -421,16 +457,29 @@ function DetailMultiSelectEditor({
 
   return (
     <div className="rounded border border-input bg-background p-2">
-      <div className="flex flex-wrap gap-1 mb-2">
-        {selected.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
-            onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex flex-wrap gap-1">
+          {selected.map((v) => (
+            <span
+              key={v}
+              className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
+              onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
+            >
+              {v} &times;
+            </span>
+          ))}
+        </div>
+        {field.type === 'multi_select' && (
+          <button
+            type="button"
+            className="rounded p-1 text-muted-foreground hover:bg-accent"
+            title={t.fieldManager.editOptions}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onEditOptions}
           >
-            {v} &times;
-          </span>
-        ))}
+            <SlidersHorizontal size={14} />
+          </button>
+        )}
       </div>
       <input
         type="text"
