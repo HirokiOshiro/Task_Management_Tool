@@ -123,10 +123,12 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
     })
   }
 
+  const normalized = applyOptionNormalization(fields, tasks)
+
   return {
     version: '1.0.0',
-    fields,
-    tasks,
+    fields: normalized.fields,
+    tasks: normalized.tasks,
     viewConfigs,
     metadata: { lastModified: new Date().toISOString(), source: 'local' },
   }
@@ -283,6 +285,68 @@ export function parseValue(raw: unknown, field: FieldDefinition): unknown {
     default:
       return String(raw)
   }
+}
+
+function applyOptionNormalization(
+  fields: FieldDefinition[],
+  tasks: Task[],
+): { fields: FieldDefinition[]; tasks: Task[] } {
+  const nextFields = fields.map((f) => ({
+    ...f,
+    options: f.options ? [...f.options] : f.options,
+  }))
+
+  for (const field of nextFields) {
+    if (field.type !== 'select' && field.type !== 'multi_select') continue
+
+    const options = [...(field.options ?? [])]
+    const optionById = new Map(options.map((o) => [o.id, o]))
+    const optionByLabel = new Map(options.map((o) => [o.label, o]))
+    const addOption = (label: string) => {
+      const trimmed = label.trim()
+      if (!trimmed) return undefined
+      const existing = optionByLabel.get(trimmed)
+      if (existing) return existing
+      const next = { id: generateId(), label: trimmed, color: '#94a3b8' }
+      options.push(next)
+      optionById.set(next.id, next)
+      optionByLabel.set(next.label, next)
+      return next
+    }
+
+    for (const task of tasks) {
+      const rawValue = task.fieldValues[field.id]
+      if (rawValue == null || rawValue === '') continue
+
+      if (field.type === 'select') {
+        const str = String(rawValue)
+        const byId = optionById.get(str)
+        if (byId) continue
+        const byLabel = optionByLabel.get(str)
+        if (byLabel) {
+          task.fieldValues[field.id] = byLabel.id
+          continue
+        }
+        const created = addOption(str)
+        if (created) task.fieldValues[field.id] = created.id
+        continue
+      }
+
+      const values = Array.isArray(rawValue)
+        ? (rawValue as string[])
+        : (typeof rawValue === 'string'
+            ? rawValue.split(/[,、]+/).map((s) => s.trim()).filter(Boolean)
+            : [])
+
+      for (const label of values) {
+        addOption(label)
+      }
+    }
+
+    field.options = options
+  }
+
+  return { fields: nextFields, tasks }
 }
 
 /**

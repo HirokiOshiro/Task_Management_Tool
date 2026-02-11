@@ -155,6 +155,11 @@ export const ja = {
   fieldManager: {
     title: 'フィールド管理',
     addField: 'フィールドを追加',
+    editOptions: '選択肢を編集',
+    optionsLabel: '選択肢',
+    optionPlaceholder: '選択肢を追加...',
+    tagOptionPlaceholder: 'タグ候補を追加...',
+    deleteOptionConfirm: 'この選択肢を削除しますか？関連するタスクの値は削除されます。',
     hide: '非表示にする',
     show: '表示する',
     deleteField: 'フィールドを削除',

@@ -157,6 +157,11 @@ export const en: Locale = {
   fieldManager: {
     title: 'Fields',
     addField: 'Add Field',
+    editOptions: 'Edit options',
+    optionsLabel: 'Options',
+    optionPlaceholder: 'Add option...',
+    tagOptionPlaceholder: 'Add tag option...',
+    deleteOptionConfirm: 'Delete this option? Related task values will be removed.',
     hide: 'Hide',
     show: 'Show',
     deleteField: 'Delete Field',

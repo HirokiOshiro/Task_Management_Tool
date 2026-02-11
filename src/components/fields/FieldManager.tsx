@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -16,14 +16,17 @@ import { CSS } from '@dnd-kit/utilities'
 import { useTaskStore } from '@/stores/task-store'
 import { useViewStore } from '@/stores/view-store'
 import type { FieldType, FieldDefinition } from '@/types/task'
-import { Eye, EyeOff, Trash2, Plus, GripVertical } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Plus, GripVertical, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n, translateFieldName } from '@/i18n'
+import { generateId } from '@/lib/id'
+import { sanitizeColor } from '@/lib/sanitize'
 
 export function FieldManager() {
-  const { fields, addField, updateField, deleteField, reorderFields } = useTaskStore()
+  const { fields, addField, updateField, updateFieldOptions, deleteField, reorderFields } = useTaskStore()
   const { views, updateView } = useViewStore()
   const [showAddForm, setShowAddForm] = useState(false)
+  const [openFieldIds, setOpenFieldIds] = useState<string[]>([])
   const { t } = useI18n()
 
   /** フィールドの表示/非表示を切り替え、全ビューの visibleFieldIds にも反映する */
@@ -67,6 +70,12 @@ export function FieldManager() {
     [fieldIds, reorderFields]
   )
 
+  const toggleOptions = useCallback((fieldId: string) => {
+    setOpenFieldIds((prev) =>
+      prev.includes(fieldId) ? prev.filter((id) => id !== fieldId) : [...prev, fieldId]
+    )
+  }, [])
+
   return (
     <div className="p-3">
       <div className="mb-2 flex items-center justify-between">
@@ -91,12 +100,18 @@ export function FieldManager() {
         <SortableContext items={fieldIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-0.5">
             {sortedFields.map((field) => (
-              <SortableFieldItem
-                key={field.id}
-                field={field}
-                onToggleVisibility={() => toggleVisibility(field)}
-                onDelete={() => deleteField(field.id)}
-              />
+              <div key={field.id}>
+                <SortableFieldItem
+                  field={field}
+                  showOptions={openFieldIds.includes(field.id)}
+                  onToggleOptions={() => toggleOptions(field.id)}
+                  onToggleVisibility={() => toggleVisibility(field)}
+                  onDelete={() => deleteField(field.id)}
+                />
+                {openFieldIds.includes(field.id) && (field.type === 'select' || field.type === 'multi_select') && (
+                  <OptionEditor field={field} onUpdateOptions={updateFieldOptions} />
+                )}
+              </div>
             ))}
           </div>
         </SortableContext>
@@ -137,10 +152,14 @@ export function FieldManager() {
 /** ソート可能なフィールドアイテム */
 function SortableFieldItem({
   field,
+  showOptions,
+  onToggleOptions,
   onToggleVisibility,
   onDelete,
 }: {
   field: FieldDefinition
+  showOptions: boolean
+  onToggleOptions: () => void
   onToggleVisibility: () => void
   onDelete: () => void
 }) {
@@ -182,6 +201,15 @@ function SortableFieldItem({
       <span className="text-[10px] text-muted-foreground">
         {FIELD_TYPE_LABELS[field.type]}
       </span>
+      {(field.type === 'select' || field.type === 'multi_select') && (
+        <button
+          onClick={onToggleOptions}
+          className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+          title={showOptions ? t.common.close : t.fieldManager.editOptions}
+        >
+          <SlidersHorizontal size={12} />
+        </button>
+      )}
       {/* 表示/非表示 */}
       <button
         onClick={onToggleVisibility}
@@ -200,6 +228,199 @@ function SortableFieldItem({
           <Trash2 size={12} />
         </button>
       )}
+    </div>
+  )
+}
+
+function OptionEditor({
+  field,
+  onUpdateOptions,
+}: {
+  field: FieldDefinition
+  onUpdateOptions: (fieldId: string, options: { id: string; label: string; color: string }[]) => void
+}) {
+  const { t } = useI18n()
+  const [newLabel, setNewLabel] = useState('')
+  const options = useMemo(() => field.options ?? [], [field.options])
+  const optionIds = options.map((o) => o.id)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+
+      const oldIndex = optionIds.indexOf(String(active.id))
+      const newIndex = optionIds.indexOf(String(over.id))
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const next = [...options]
+      const [moved] = next.splice(oldIndex, 1)
+      next.splice(newIndex, 0, moved)
+      onUpdateOptions(field.id, next)
+    },
+    [field.id, onUpdateOptions, optionIds, options]
+  )
+
+  const handleAdd = useCallback(() => {
+    const trimmed = newLabel.trim()
+    if (!trimmed) return
+    const next = [
+      ...options,
+      { id: generateId(), label: trimmed, color: '#94a3b8' },
+    ]
+    onUpdateOptions(field.id, next)
+    setNewLabel('')
+  }, [field.id, newLabel, onUpdateOptions, options])
+
+  const handleDelete = useCallback(
+    (optionId: string) => {
+      if (!window.confirm(t.fieldManager.deleteOptionConfirm)) return
+      onUpdateOptions(field.id, options.filter((o) => o.id !== optionId))
+    },
+    [field.id, onUpdateOptions, options, t]
+  )
+
+  return (
+    <div className="ml-4 mt-1 rounded border border-border bg-background/50 p-2">
+      <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+        {t.fieldManager.optionsLabel}
+      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={optionIds} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1">
+            {options.map((option) => (
+              <SortableOptionItem
+                key={option.id}
+                option={option}
+                allowColor={field.type === 'select'}
+                onDelete={() => handleDelete(option.id)}
+                onUpdate={(updates) => {
+                  const next = options.map((o) =>
+                    o.id === option.id ? { ...o, ...updates } : o
+                  )
+                  onUpdateOptions(field.id, next)
+                }}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="text"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              handleAdd()
+            }
+          }}
+          placeholder={
+            field.type === 'multi_select'
+              ? t.fieldManager.tagOptionPlaceholder
+              : t.fieldManager.optionPlaceholder
+          }
+          className="flex-1 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
+        />
+        <button
+          onClick={handleAdd}
+          className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90"
+        >
+          {t.common.add}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SortableOptionItem({
+  option,
+  allowColor,
+  onUpdate,
+  onDelete,
+}: {
+  option: { id: string; label: string; color: string }
+  allowColor: boolean
+  onUpdate: (updates: { label?: string; color?: string }) => void
+  onDelete: () => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: option.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const safeColor = sanitizeColor(option.color ?? '#94a3b8')
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs',
+        isDragging && 'opacity-50'
+      )}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical size={12} className="text-muted-foreground/40" />
+      </div>
+      <input
+        key={`${option.id}-${option.label}`}
+        defaultValue={option.label}
+        className="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+        onBlur={(e) => {
+          const trimmed = e.currentTarget.value.trim()
+          if (!trimmed) {
+            e.currentTarget.value = option.label
+            return
+          }
+          if (trimmed !== option.label) {
+            onUpdate({ label: trimmed })
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur()
+          }
+        }}
+      />
+      {allowColor && (
+        <input
+          type="color"
+          value={safeColor}
+          onChange={(e) => onUpdate({ color: sanitizeColor(e.target.value) })}
+          className="h-5 w-6 border border-border rounded"
+          aria-label="Option color"
+        />
+      )}
+      <button
+        onClick={onDelete}
+        className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
+        title="Delete option"
+      >
+        <Trash2 size={12} />
+      </button>
     </div>
   )
 }

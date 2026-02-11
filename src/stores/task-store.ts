@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { persist } from 'zustand/middleware'
-import type { Task, FieldDefinition, TaskDataSet, TaskFieldValues } from '@/types/task'
+import type { Task, FieldDefinition, TaskDataSet, TaskFieldValues, SelectOption } from '@/types/task'
 import type { ViewConfig } from '@/types/view'
 import { createDefaultFields } from '@/types/task'
 import { generateId } from '@/lib/id'
@@ -40,6 +40,7 @@ interface TaskState {
   // フィールドCRUD
   addField: (field: Omit<FieldDefinition, 'id' | 'order'>) => void
   updateField: (fieldId: string, updates: Partial<FieldDefinition>) => void
+  updateFieldOptions: (fieldId: string, options: SelectOption[]) => void
   deleteField: (fieldId: string) => void
   reorderFields: (fieldIds: string[]) => void
 
@@ -148,6 +149,73 @@ export const useTaskStore = create<TaskState>()(
       })
     },
 
+    updateFieldOptions: (fieldId, options) => {
+      set((state) => {
+        const field = state.fields.find((f) => f.id === fieldId)
+        if (!field) return
+
+        const previousOptions = field.options ?? []
+        field.options = options
+        state.isDirty = true
+
+        if (field.type === 'select') {
+          const nextIds = new Set(options.map((o) => o.id))
+          const removedIds = previousOptions
+            .filter((opt) => !nextIds.has(opt.id))
+            .map((opt) => opt.id)
+
+          if (removedIds.length > 0) {
+            const removedSet = new Set(removedIds)
+            for (const task of state.tasks) {
+              const value = task.fieldValues[fieldId]
+              if (value != null && removedSet.has(String(value))) {
+                delete task.fieldValues[fieldId]
+              }
+            }
+          }
+        }
+
+        if (field.type === 'multi_select') {
+          const prevLabelById = new Map(previousOptions.map((opt) => [opt.id, opt.label]))
+          const nextLabelById = new Map(options.map((opt) => [opt.id, opt.label]))
+          const removedLabels = new Set<string>()
+          const renameMap = new Map<string, string>()
+
+          for (const [id, prevLabel] of prevLabelById.entries()) {
+            const nextLabel = nextLabelById.get(id)
+            if (!nextLabel) {
+              removedLabels.add(prevLabel)
+              continue
+            }
+            if (nextLabel !== prevLabel) {
+              renameMap.set(prevLabel, nextLabel)
+            }
+          }
+
+          if (removedLabels.size > 0 || renameMap.size > 0) {
+            for (const task of state.tasks) {
+              const value = task.fieldValues[fieldId]
+              const current = Array.isArray(value)
+                ? (value as string[])
+                : (typeof value === 'string' && value ? [value] : [])
+
+              if (current.length === 0) continue
+
+              const nextValues = current
+                .map((v) => renameMap.get(v) ?? v)
+                .filter((v) => !removedLabels.has(v))
+
+              if (nextValues.length === 0) {
+                delete task.fieldValues[fieldId]
+              } else {
+                task.fieldValues[fieldId] = Array.from(new Set(nextValues))
+              }
+            }
+          }
+        }
+      })
+    },
+
     deleteField: (fieldId) => {
       set((state) => {
         const field = state.fields.find((f) => f.id === fieldId)
@@ -183,6 +251,64 @@ export const useTaskStore = create<TaskState>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }))
+
+        const ensureOptionsForField = (field: FieldDefinition) => {
+          if (field.type !== 'select' && field.type !== 'multi_select') return
+
+          const options = [...(field.options ?? [])]
+          const optionById = new Map(options.map((o) => [o.id, o]))
+          const optionByLabel = new Map(options.map((o) => [o.label, o]))
+          const addOption = (label: string) => {
+            const trimmed = label.trim()
+            if (!trimmed) return undefined
+            const existing = optionByLabel.get(trimmed)
+            if (existing) return existing
+            const next = { id: generateId(), label: trimmed, color: '#94a3b8' }
+            options.push(next)
+            optionById.set(next.id, next)
+            optionByLabel.set(next.label, next)
+            return next
+          }
+
+          for (const task of remapped) {
+            const rawValue = task.fieldValues[field.id]
+            if (rawValue == null || rawValue === '') continue
+
+            if (field.type === 'select') {
+              const str = String(rawValue)
+              const byId = optionById.get(str)
+              if (byId) continue
+              const byLabel = optionByLabel.get(str)
+              if (byLabel) {
+                task.fieldValues[field.id] = byLabel.id
+                continue
+              }
+              const created = addOption(str)
+              if (created) task.fieldValues[field.id] = created.id
+              continue
+            }
+
+            const values = Array.isArray(rawValue)
+              ? (rawValue as string[])
+              : (typeof rawValue === 'string'
+                  ? rawValue.split(/[,、]+/).map((s) => s.trim()).filter(Boolean)
+                  : [])
+
+            for (const label of values) {
+              addOption(label)
+            }
+          }
+
+          field.options = options
+        }
+
+        for (const field of state.fields) {
+          ensureOptionsForField(field)
+        }
+
+        for (const field of newFields) {
+          ensureOptionsForField(field)
+        }
 
         if (mode === 'replace') {
           state.tasks = remapped
@@ -270,7 +396,7 @@ export const useTaskStore = create<TaskState>()(
         const updatedFields = fields.map(f => {
           if (!f.isSystem) return f
           const defaultField = defaultFields.find(df => df.id === f.id)
-          if (defaultField?.options && (!f.options || f.options.length === 0)) {
+          if (defaultField?.options && f.options == null) {
             optionsUpdated = true
             return { ...f, options: defaultField.options }
           }
