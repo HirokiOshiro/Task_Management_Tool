@@ -27,8 +27,8 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
             options: f.options?.map((o) => ({ ...o, color: sanitizeColor(o.color) })),
           }))
         }
-      } catch {
-        // パース失敗時はnullのまま
+      } catch (e) {
+        console.warn('[parseExcel] _FieldDefs のパースに失敗しました。ヘッダーから推論します:', e)
       }
     }
   }
@@ -43,8 +43,8 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
         if (Array.isArray(parsed)) {
           viewConfigs = parsed.filter(isValidViewConfig)
         }
-      } catch {
-        // パース失敗時は空配列
+      } catch (e) {
+        console.warn('[parseExcel] _ViewConfigs のパースに失敗しました:', e)
       }
     }
   }
