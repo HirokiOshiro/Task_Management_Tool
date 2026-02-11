@@ -1,5 +1,6 @@
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
+import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote, SlidersHorizontal } from 'lucide-react'
@@ -10,6 +11,7 @@ import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FieldOptionModal } from '@/components/fields/FieldOptionModal'
+import { buildDependencyGraph, wouldCreateCycle } from '@/lib/dependency-utils'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -153,6 +155,7 @@ function DetailField({
       <div>
         {editing ? (
           <DetailEditor
+            taskId={taskId}
             field={field}
             value={value}
             onSave={(v) => {
@@ -207,6 +210,9 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
     case 'multi_select': {
       const values = Array.isArray(value) ? value : []
       if (values.length === 0) return <span className="text-muted-foreground/40 text-sm">{t.taskDetail.empty}</span>
+      if (field.id === SYSTEM_FIELD_IDS.DEPENDENCIES) {
+        return <DependencyValueDisplay ids={values as string[]} />
+      }
       return (
         <div className="flex flex-wrap gap-1">
           {values.map((v: string) => (
@@ -269,12 +275,14 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
 
 /** 詳細パネルのエディタ */
 function DetailEditor({
+  taskId,
   field,
   value,
   onSave,
   onCancel,
   onEditOptions,
 }: {
+  taskId: string
   field: FieldDefinition
   value: unknown
   onSave: (value: unknown) => void
@@ -355,6 +363,16 @@ function DetailEditor({
       )
     case 'person':
     case 'multi_select':
+      if (field.id === SYSTEM_FIELD_IDS.DEPENDENCIES) {
+        return (
+          <DependencyEditor
+            currentTaskId={taskId}
+            value={value}
+            onSave={onSave}
+            onCancel={onCancel}
+          />
+        )
+      }
       return (
         <DetailMultiSelectEditor
           field={field}
@@ -714,6 +732,150 @@ function MemoSection({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** 依存関係の値表示（タスクIDをタスク名に解決） */
+function DependencyValueDisplay({ ids }: { ids: string[] }) {
+  const { tasks } = useTaskStore()
+  const { t } = useI18n()
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {ids.map((id) => {
+        const task = tasks.find(tk => tk.id === id)
+        const title = task
+          ? String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] || t.common.untitled)
+          : id
+        return (
+          <span key={id} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs">
+            {title}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** 依存関係エディタ（タスク選択UI） */
+function DependencyEditor({
+  currentTaskId,
+  value,
+  onSave,
+  onCancel,
+}: {
+  currentTaskId: string
+  value: unknown
+  onSave: (value: unknown) => void
+  onCancel: () => void
+}) {
+  const current = Array.isArray(value) ? (value as string[]) : []
+  const [selected, setSelected] = useState<string[]>(current)
+  const [search, setSearch] = useState('')
+  const { t } = useI18n()
+  const { tasks } = useTaskStore()
+  const addToast = useToastStore(s => s.addToast)
+
+  const candidates = useMemo(() => {
+    return tasks
+      .filter(task => task.id !== currentTaskId)
+      .map(task => ({
+        id: task.id,
+        title: String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] || t.common.untitled),
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'ja'))
+  }, [tasks, currentTaskId, t])
+
+  const filtered = useMemo(() => {
+    if (!search) return candidates
+    const q = search.toLowerCase()
+    return candidates.filter(c => c.title.toLowerCase().includes(q))
+  }, [candidates, search])
+
+  const toggle = (taskId: string) => {
+    setSelected(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId)
+      }
+      // 循環チェック
+      const graph = buildDependencyGraph(tasks)
+      graph.set(currentTaskId, [...(graph.get(currentTaskId) ?? []), taskId])
+      if (wouldCreateCycle(graph, taskId, currentTaskId)) {
+        addToast(t.taskDetail.cycleDetected, 'error')
+        return prev
+      }
+      return [...prev, taskId]
+    })
+  }
+
+  return (
+    <div className="rounded border border-input bg-background p-2">
+      {/* 選択済み */}
+      <div className="flex flex-wrap gap-1 mb-2 min-h-[24px]">
+        {selected.length === 0 ? (
+          <span className="text-xs text-muted-foreground">{t.taskDetail.noDependencies}</span>
+        ) : (
+          selected.map(id => {
+            const c = candidates.find(cd => cd.id === id)
+            return (
+              <span
+                key={id}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => toggle(id)}
+              >
+                {c?.title ?? id}
+                <X size={10} />
+              </span>
+            )
+          })
+        )}
+      </div>
+      {/* 検索 */}
+      <input
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={t.taskDetail.searchTasks}
+        className="w-full rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-ring mb-1"
+        autoFocus
+      />
+      {/* 候補リスト */}
+      <div className="max-h-40 overflow-y-auto">
+        {filtered.map(c => {
+          const isSelected = selected.includes(c.id)
+          return (
+            <button
+              key={c.id}
+              className={cn(
+                'block w-full text-left px-2 py-1 text-sm rounded transition-colors',
+                isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-accent',
+              )}
+              onClick={() => toggle(c.id)}
+            >
+              {c.title}
+            </button>
+          )
+        })}
+        {filtered.length === 0 && (
+          <span className="block px-2 py-1 text-xs text-muted-foreground">{t.taskDetail.empty}</span>
+        )}
+      </div>
+      {/* 保存/キャンセル */}
+      <div className="mt-2 flex gap-2 border-t border-border pt-2">
+        <button
+          onClick={() => onSave(selected.length > 0 ? selected : undefined)}
+          className="flex-1 rounded bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          {t.common.save}
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 rounded border border-input px-3 py-1.5 text-xs hover:bg-accent transition-colors"
+        >
+          {t.common.cancel}
+        </button>
+      </div>
     </div>
   )
 }

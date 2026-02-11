@@ -179,6 +179,9 @@ export const en: Locale = {
     memoPlaceholder: 'Enter notes...',
     memoClickToAdd: 'Click to add notes...',
     tagsPlaceholder: 'Enter tag and press Enter...',
+    noDependencies: 'No dependencies',
+    cycleDetected: 'Circular dependency detected',
+    searchTasks: 'Search tasks...',
   },
 
   // ── Table View ──

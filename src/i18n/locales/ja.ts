@@ -177,6 +177,9 @@ export const ja = {
     memoPlaceholder: 'メモを入力...',
     memoClickToAdd: 'クリックしてメモを追加...',
     tagsPlaceholder: 'タグを入力してEnter...',
+    noDependencies: '依存関係なし',
+    cycleDetected: '循環依存が検出されました',
+    searchTasks: 'タスクを検索…',
   },
 
   // ── Table View ──
@@ -439,6 +442,9 @@ export type Locale = {
     memoPlaceholder: string
     memoClickToAdd: string
     tagsPlaceholder: string
+    noDependencies: string
+    cycleDetected: string
+    searchTasks: string
   }
   table: {
     deleteTask: string

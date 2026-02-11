@@ -22,6 +22,7 @@ import { useI18n, translateOptionLabel } from '@/i18n'
 import { CalendarDays, Plus, ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
+import { getAllDependencyEdges } from '@/lib/dependency-utils'
 
 const DAY_WIDTH = 32
 const ROW_HEIGHT = 36
@@ -127,6 +128,12 @@ export function GanttView() {
   const sortedGanttTasks = useMemo(() => {
     return [...ganttTasks].sort((a, b) => a.start.getTime() - b.start.getTime())
   }, [ganttTasks])
+
+  // 依存関係エッジ（ガントに表示中のタスク間のみ）
+  const dependencyEdges = useMemo(() => {
+    const ganttIds = new Set(ganttTasks.map(t => t.id))
+    return getAllDependencyEdges(tasks).filter(e => ganttIds.has(e.from) && ganttIds.has(e.to))
+  }, [tasks, ganttTasks])
 
   // グループ化（業務別など）
   const groupConfig = activeView.group
@@ -931,6 +938,75 @@ export function GanttView() {
               )}
             </div>
           </div>
+        )}
+
+        {/* 依存関係矢印レイヤー */}
+        {dependencyEdges.length > 0 && (
+          <svg
+            className="absolute top-0 left-0 pointer-events-none"
+            style={{
+              width: TASK_NAME_WIDTH + totalDays * DAY_WIDTH,
+              height: HEADER_HEIGHT + displayRows.length * ROW_HEIGHT,
+            }}
+          >
+            <defs>
+              <marker
+                id="dep-arrow"
+                viewBox="0 0 8 8"
+                refX="8"
+                refY="4"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--color-primary, #3b82f6)" opacity="0.6" />
+              </marker>
+            </defs>
+            {dependencyEdges.map((edge) => {
+              const fromIdx = displayRows.findIndex(
+                r => r.type === 'task' && r.task.id === edge.from,
+              )
+              const toIdx = displayRows.findIndex(
+                r => r.type === 'task' && r.task.id === edge.to,
+              )
+              if (fromIdx === -1 || toIdx === -1) return null
+
+              const fromTask = (displayRows[fromIdx] as Extract<DisplayRow, { type: 'task' }>).task
+              const toTask = (displayRows[toIdx] as Extract<DisplayRow, { type: 'task' }>).task
+
+              const fromDates = getDisplayDates(fromTask)
+              const toDates = getDisplayDates(toTask)
+
+              const fromEndOffset = differenceInDays(fromDates.end, minDate)
+              const toStartOffset = differenceInDays(toDates.start, minDate)
+
+              // 先行タスクバーの右端中央
+              const x1 = TASK_NAME_WIDTH + (fromEndOffset + 1) * DAY_WIDTH - 2
+              const y1 = HEADER_HEIGHT + fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2
+
+              // 後続タスクバーの左端中央
+              const x2 = TASK_NAME_WIDTH + toStartOffset * DAY_WIDTH + 2
+              const y2 = HEADER_HEIGHT + toIdx * ROW_HEIGHT + ROW_HEIGHT / 2
+
+              // 水平距離に応じてカーブの制御点を調整
+              const dx = Math.abs(x2 - x1)
+              const offset = Math.max(Math.min(dx * 0.4, 60), 20)
+
+              const pathD = `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 - offset} ${y2}, ${x2} ${y2}`
+
+              return (
+                <path
+                  key={`${edge.from}-${edge.to}`}
+                  d={pathD}
+                  stroke="var(--color-primary, #3b82f6)"
+                  strokeWidth="1.5"
+                  fill="none"
+                  opacity="0.5"
+                  markerEnd="url(#dep-arrow)"
+                />
+              )
+            })}
+          </svg>
         )}
 
         {/* マーキー（範囲選択）矩形 */}

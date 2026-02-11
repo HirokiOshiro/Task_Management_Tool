@@ -130,6 +130,78 @@ sequenceDiagram
 - Data loss risk: Clearing browser data or using private mode can erase local data. Recommend regular JSON/XLSX exports.
 - Import size limit: Imports are capped at 50MB to prevent oversized file loads.
 
+## Task Dependencies (2026-02-11)
+
+The dependencies field (`SYSTEM_FIELD_IDS.DEPENDENCIES`) stores an array of task IDs, enabling structured task-to-task linking.
+
+### Data Model
+
+- Field type: `multi_select` (system field)
+- Value: `string[]` of task IDs stored in `task.fieldValues['dependencies']`
+- Semantics: Finish-to-Start — the listed tasks are predecessors of the current task
+
+### Utility Module: src/lib/dependency-utils.ts
+
+- `getDependencies(task)` — safely extract dependency IDs from a task
+- `buildDependencyGraph(tasks)` — build adjacency list for all tasks
+- `wouldCreateCycle(graph, from, to)` — DFS-based cycle detection before adding an edge
+- `getAllDependencyEdges(tasks)` — extract all edges for Gantt arrow rendering
+
+### Diagram 4: Dependency Data Flow
+```mermaid
+flowchart LR
+  subgraph Edit["Edit UI"]
+    Detail["TaskDetailPanel<br/>DependencyEditor"]
+    Table["TableView<br/>DependencyInlineEditor"]
+  end
+
+  subgraph Validate["Validation"]
+    Cycle["wouldCreateCycle()<br/>(DFS)"]
+  end
+
+  subgraph Store["Task Store"]
+    FV["task.fieldValues<br/>['dependencies']"]
+  end
+
+  subgraph Display["Display"]
+    DetailVal["DependencyValueDisplay<br/>(task name badges)"]
+    CellVal["DependencyCellDisplay<br/>(task name badges)"]
+    Arrow["GanttView SVG overlay<br/>(Bézier arrows)"]
+  end
+
+  Detail --> Cycle --> FV
+  Table --> Cycle
+  FV --> DetailVal
+  FV --> CellVal
+  FV --> Arrow
+```
+
+### Edit UI
+
+- **TaskDetailPanel**: `DependencyEditor` — dropdown with search filter, task name display, cycle check with toast warning
+- **TableView**: `DependencyInlineEditor` — compact inline version of the same editor
+
+### Gantt Arrow Rendering
+
+- SVG overlay layer inserted between task rows and the marquee rectangle
+- Each dependency edge draws a cubic Bézier curve from predecessor bar's right edge to successor bar's left edge
+- Arrow marker defined via SVG `<marker>` with `<defs>`
+- `pointer-events: none` ensures no interference with existing drag/resize/marquee interactions
+
+### Cleanup on Task Deletion
+
+- `deleteTask()` and `deleteTasks()` in task-store automatically remove deleted task IDs from all other tasks' dependency arrays
+
+### Key Files
+
+| File | Role |
+| ---- | ---- |
+| src/lib/dependency-utils.ts | Core logic (graph, cycle detection, edge extraction) |
+| src/stores/task-store.ts | Cleanup on deletion |
+| src/components/task/TaskDetailPanel.tsx | DependencyEditor + DependencyValueDisplay |
+| src/components/views/table/TableView.tsx | DependencyInlineEditor + DependencyCellDisplay |
+| src/components/views/gantt/GanttView.tsx | SVG arrow overlay |
+
 ## Security/Privacy Notes
 - No network communication APIs (fetch/axios/WebSocket) are used.
 - No account login is required; no personal data is collected.

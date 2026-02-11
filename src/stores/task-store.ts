@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 import { persist } from 'zustand/middleware'
 import type { Task, FieldDefinition, TaskDataSet, TaskFieldValues, SelectOption } from '@/types/task'
 import type { ViewConfig } from '@/types/view'
-import { createDefaultFields } from '@/types/task'
+import { createDefaultFields, SYSTEM_FIELD_IDS } from '@/types/task'
 import { generateId } from '@/lib/id'
 
 /** 後方互換性: person フィールドの値を string から string[] に変換 */
@@ -115,6 +115,18 @@ export const useTaskStore = create<TaskState>()(
     deleteTask: (taskId) => {
       set((state) => {
         state.tasks = state.tasks.filter((t) => t.id !== taskId)
+        // 依存関係のクリーンアップ: 削除したタスクへの参照を除去
+        for (const task of state.tasks) {
+          const deps = task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES]
+          if (Array.isArray(deps)) {
+            const filtered = (deps as string[]).filter(id => id !== taskId)
+            if (filtered.length === 0) {
+              delete task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES]
+            } else if (filtered.length !== deps.length) {
+              task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES] = filtered
+            }
+          }
+        }
         state.isDirty = true
       })
     },
@@ -123,6 +135,18 @@ export const useTaskStore = create<TaskState>()(
       set((state) => {
         const idSet = new Set(taskIds)
         state.tasks = state.tasks.filter((t) => !idSet.has(t.id))
+        // 依存関係のクリーンアップ
+        for (const task of state.tasks) {
+          const deps = task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES]
+          if (Array.isArray(deps)) {
+            const filtered = (deps as string[]).filter(id => !idSet.has(id))
+            if (filtered.length === 0) {
+              delete task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES]
+            } else if (filtered.length !== deps.length) {
+              task.fieldValues[SYSTEM_FIELD_IDS.DEPENDENCIES] = filtered
+            }
+          }
+        }
         state.isDirty = true
       })
     },
