@@ -15,7 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useTaskStore } from '@/stores/task-store'
 import { useViewStore } from '@/stores/view-store'
-import type { FieldDefinition } from '@/types/task'
+import type { FieldDefinition, FieldType } from '@/types/task'
 import { Eye, EyeOff, Trash2, Plus, GripVertical, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n, translateFieldName } from '@/i18n'
