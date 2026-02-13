@@ -25,7 +25,6 @@ function getOperatorsForType(type: FieldDefinition['type']): FilterOperator[] {
     case 'url':
       return ['contains', 'not_contains', 'equals', 'not_equals', 'is_empty', 'is_not_empty']
     case 'number':
-    case 'progress':
       return ['equals', 'not_equals', 'greater_than', 'less_than', 'is_empty', 'is_not_empty']
     case 'select':
       return ['equals', 'not_equals', 'is_empty', 'is_not_empty']
@@ -325,7 +324,7 @@ export function FilterBar() {
                 />
               ) : (
                 <input
-                  type={field.type === 'number' || field.type === 'progress' ? 'number' : 'text'}
+                  type={field.type === 'number' ? 'number' : 'text'}
                   value={String(filter.value ?? '')}
                   onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
                   placeholder={t.filter.valuePlaceholder}

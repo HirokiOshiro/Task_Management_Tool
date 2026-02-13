@@ -30,7 +30,6 @@ export const en: Locale = {
     person: 'Person',
     checkbox: 'Checkbox',
     url: 'URL',
-    progress: 'Progress',
   },
 
   // ── Field Names ──
@@ -42,7 +41,6 @@ export const en: Locale = {
     priority: 'Priority',
     description: 'Description',
     tags: 'Tags',
-    progress: 'Progress',
     startDate: 'Start Date',
     dependencies: 'Dependencies',
     notes: 'Notes',

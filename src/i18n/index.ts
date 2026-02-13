@@ -47,7 +47,6 @@ const FIELD_ID_TO_KEY: Record<string, keyof Locale['fieldNames']> = {
   priority: 'priority',
   description: 'description',
   tags: 'tags',
-  progress: 'progress',
   start_date: 'startDate',
   dependencies: 'dependencies',
   notes: 'notes',

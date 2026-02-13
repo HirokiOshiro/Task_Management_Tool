@@ -225,17 +225,6 @@ function DetailValue({ value, field }: { value: unknown; field: FieldDefinition 
     }
     case 'checkbox':
       return <input type="checkbox" checked={Boolean(value)} readOnly className="h-4 w-4 accent-primary" />
-    case 'progress': {
-      const num = Number(value) || 0
-      return (
-        <div className="flex items-center gap-2 w-full">
-          <div className="h-2 flex-1 rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${num}%` }} />
-          </div>
-          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{num}%</span>
-        </div>
-      )
-    }
     case 'person': {
       const persons = Array.isArray(value) ? value as string[] : (typeof value === 'string' ? [value] : [])
       if (persons.length === 0) return <span className="text-muted-foreground/40 text-sm">{t.taskDetail.empty}</span>
@@ -328,23 +317,20 @@ function DetailEditor({
         />
       )
     case 'number':
-    case 'progress':
       return (
         <input
           ref={inputRef as React.RefObject<HTMLInputElement>}
           type="number"
-          min={field.type === 'progress' ? 0 : undefined}
-          max={field.type === 'progress' ? 100 : undefined}
           defaultValue={value != null ? Number(value) : ''}
           className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           onBlur={(e) => {
             const v = Number(e.target.value)
-            onSave(isNaN(v) ? undefined : field.type === 'progress' ? Math.min(100, Math.max(0, v)) : v)
+            onSave(isNaN(v) ? undefined : v)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               const v = Number((e.target as HTMLInputElement).value)
-              onSave(isNaN(v) ? undefined : field.type === 'progress' ? Math.min(100, Math.max(0, v)) : v)
+              onSave(isNaN(v) ? undefined : v)
             }
             handleKeyDown(e)
           }}

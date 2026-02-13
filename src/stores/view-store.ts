@@ -38,7 +38,6 @@ function createDefaultViews(): ViewConfig[] {
         SYSTEM_FIELD_IDS.TITLE,
         SYSTEM_FIELD_IDS.STATUS,
         SYSTEM_FIELD_IDS.ASSIGNEE,
-        SYSTEM_FIELD_IDS.PROGRESS,
       ],
       ganttStartFieldId: SYSTEM_FIELD_IDS.START_DATE,
       ganttEndFieldId: SYSTEM_FIELD_IDS.DUE_DATE,

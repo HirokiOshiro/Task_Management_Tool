@@ -66,8 +66,6 @@ function formatValue(value: unknown, field: FieldDefinition): unknown {
     }
     case 'checkbox':
       return value ? 'Yes' : 'No'
-    case 'progress':
-      return Number(value) || 0
     case 'number':
       return Number(value) || 0
     case 'date':

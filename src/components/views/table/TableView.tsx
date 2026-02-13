@@ -351,20 +351,6 @@ function CellRenderer({
           className="h-4 w-4 accent-primary cursor-pointer"
         />
       )
-    case 'progress': {
-      const num = Number(value) || 0
-      return (
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-full max-w-[80px] rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(num, 100)}%` }}
-            />
-          </div>
-          <span className="text-xs text-muted-foreground tabular-nums">{num}%</span>
-        </div>
-      )
-    }
     case 'date':
       return <span className="tabular-nums">{String(value)}</span>
     case 'url': {
@@ -480,25 +466,6 @@ function CellEditor({
             if (e.key === 'Enter') {
               const v = (e.target as HTMLInputElement).value
               onSave(v ? Number(v) : undefined)
-            }
-            handleKeyDown(e)
-          }}
-        />
-      )
-    case 'progress':
-      return (
-        <input
-          ref={inputRef}
-          type="number"
-          min={0}
-          max={100}
-          defaultValue={value != null ? Number(value) : 0}
-          className="w-20 rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onBlur={(e) => onSave(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              const v = Number((e.target as HTMLInputElement).value) || 0
-              onSave(Math.min(100, Math.max(0, v)))
             }
             handleKeyDown(e)
           }}

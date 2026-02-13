@@ -8,7 +8,6 @@ export type FieldType =
   | 'person'
   | 'checkbox'
   | 'url'
-  | 'progress'
 
 /** Selectフィールドの選択肢 */
 export interface SelectOption {
@@ -41,7 +40,6 @@ export const SYSTEM_FIELD_IDS = {
   DESCRIPTION: 'description',
   TAGS: 'tags',
   CATEGORY: 'category',
-  PROGRESS: 'progress',
   START_DATE: 'start_date',
   DEPENDENCIES: 'dependencies',
   NOTES: 'notes',
@@ -200,16 +198,6 @@ export function createDefaultFields(): FieldDefinition[] {
       width: 150,
       visible: true,
       options: [],
-      isSystem: true,
-    },
-    {
-      id: SYSTEM_FIELD_IDS.PROGRESS,
-      name: '進捗',
-      type: 'progress',
-      required: false,
-      order: 9,
-      width: 120,
-      visible: false,
       isSystem: true,
     },
     {

@@ -59,9 +59,9 @@ interface GanttTask {
   title: string
   start: Date
   end: Date
-  progress: number
   color: string
   categoryId: string
+  assignees: string[]
 }
 
 type DisplayRow =
@@ -72,7 +72,7 @@ type DisplayRow =
 interface InlineCreateState {
   /** クリック位置から算出した開始日 */
   startDate: Date
-  /** 開始日 + 3日のデフォルト終了日 */
+  /** 開始日と同日のデフォルト終了日 */
   endDate: Date
 }
 
@@ -105,20 +105,23 @@ export function GanttView() {
 
         const start = startStr ? startOfDay(new Date(startStr)) : startOfDay(new Date(endStr!))
         const end = endStr ? startOfDay(new Date(endStr)) : startOfDay(new Date(startStr!))
-        const progress = (task.fieldValues[SYSTEM_FIELD_IDS.PROGRESS] as number) ?? 0
         const status = task.fieldValues[SYSTEM_FIELD_IDS.STATUS] as string
         const statusField = fields.find((f) => f.id === SYSTEM_FIELD_IDS.STATUS)
         const statusOption = statusField?.options?.find((o) => o.id === status)
         const categoryId = (task.fieldValues[SYSTEM_FIELD_IDS.CATEGORY] as string) ?? ''
+        const rawAssignee = task.fieldValues[SYSTEM_FIELD_IDS.ASSIGNEE]
+        const assignees = Array.isArray(rawAssignee)
+          ? rawAssignee as string[]
+          : (typeof rawAssignee === 'string' && rawAssignee ? [rawAssignee] : [])
 
         return {
           id: task.id,
           title: String(task.fieldValues[SYSTEM_FIELD_IDS.TITLE] ?? t.common.untitled),
           start,
           end: end < start ? start : end,
-          progress,
           color: sanitizeColor(statusOption?.color ?? '#3b82f6'),
           categoryId,
+          assignees,
         }
       })
       .filter(Boolean) as GanttTask[]
@@ -552,7 +555,7 @@ export function GanttView() {
 
       const dayIndex = Math.floor(clickX / DAY_WIDTH)
       const clickedDate = addDays(minDate, dayIndex)
-      const endDate = addDays(clickedDate, 3)
+      const endDate = clickedDate
 
       setInlineCreate({ startDate: clickedDate, endDate })
       setInlineTitle('')
@@ -592,7 +595,7 @@ export function GanttView() {
   /** + ボタン → 今日起点でインラインタスク作成 */
   const handleAddTaskRow = useCallback(() => {
     const today = startOfDay(new Date())
-    setInlineCreate({ startDate: today, endDate: addDays(today, 3) })
+    setInlineCreate({ startDate: today, endDate: today })
     setInlineTitle('')
   }, [])
 
@@ -815,12 +818,30 @@ export function GanttView() {
                     <div className="absolute left-0.5 top-1/2 -translate-y-1/2 h-3 w-1 rounded-full bg-white/60" />
                   </div>
 
-                  {/* 進捗バー */}
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-l-md bg-white/20"
-                    style={{ width: `${task.progress}%` }}
-                  />
-                  <span className="relative z-10 truncate px-3">{task.title}</span>
+                  <span className={cn(
+                    "relative z-10 truncate px-3",
+                    task.assignees.length > 0 && barWidth > 60 && "pr-8",
+                  )}>{task.title}</span>
+
+                  {/* 担当者イニシャル */}
+                  {task.assignees.length > 0 && barWidth > 60 && (
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10">
+                      {task.assignees.slice(0, barWidth > 120 ? 3 : 1).map((name, idx) => (
+                        <div
+                          key={idx}
+                          className="flex h-4 w-4 items-center justify-center rounded-full bg-white/30 text-[9px] font-medium text-white flex-shrink-0"
+                          title={name}
+                        >
+                          {name.charAt(0)}
+                        </div>
+                      ))}
+                      {task.assignees.length > (barWidth > 120 ? 3 : 1) && (
+                        <span className="text-[8px] text-white/70 flex-shrink-0">
+                          +{task.assignees.length - (barWidth > 120 ? 3 : 1)}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* 右端リサイズハンドル */}
                   <div

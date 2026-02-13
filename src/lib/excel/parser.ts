@@ -155,8 +155,6 @@ export function inferFieldsFromHeaders(
     'Description': { id: 'description', type: 'text' },
     'タグ': { id: 'tags', type: 'multi_select' },
     'Tags': { id: 'tags', type: 'multi_select' },
-    '進捗': { id: 'progress', type: 'progress' },
-    'Progress': { id: 'progress', type: 'progress' },
     '開始日': { id: 'start_date', type: 'date' },
     'Start Date': { id: 'start_date', type: 'date' },
     '業務': { id: 'category', type: 'select' },
@@ -210,12 +208,6 @@ function inferType(values: unknown[]): FieldDefinition['type'] {
 
   const allNumbers = values.every((v) => !isNaN(Number(v)))
   if (allNumbers) {
-    // パーセント値かチェック
-    const allPercent = values.every((v) => {
-      const n = Number(v)
-      return n >= 0 && n <= 100
-    })
-    if (allPercent && values.length >= 3) return 'progress'
     return 'number'
   }
 
@@ -260,7 +252,6 @@ export function parseValue(raw: unknown, field: FieldDefinition): unknown {
 
   switch (field.type) {
     case 'number':
-    case 'progress':
       return Number(raw) || 0
     case 'checkbox': {
       const s = String(raw).toLowerCase()

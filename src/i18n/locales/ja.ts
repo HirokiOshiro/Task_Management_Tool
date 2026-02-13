@@ -28,7 +28,6 @@ export const ja = {
     person: '担当者',
     checkbox: 'チェックボックス',
     url: 'URL',
-    progress: '進捗',
   },
 
   // ── Field Names ──
@@ -40,7 +39,6 @@ export const ja = {
     priority: '優先度',
     description: '説明',
     tags: 'タグ',
-    progress: '進捗',
     startDate: '開始日',
     dependencies: '依存関係',
     notes: 'メモ',
