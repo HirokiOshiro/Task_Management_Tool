@@ -1,6 +1,16 @@
 import * as XLSX from 'xlsx'
 import type { TaskDataSet, FieldDefinition } from '@/types/task'
 
+const FORMULA_PREFIX_RE = /^\s*[=+\-@]/
+
+function sanitizeSpreadsheetText(value: string): string {
+  if (!value) return value
+  if (FORMULA_PREFIX_RE.test(value)) {
+    return `'${value}`
+  }
+  return value
+}
+
 /** TaskDataSetをExcelファイル(Uint8Array)に変換 */
 export function writeExcel(dataSet: TaskDataSet): Uint8Array {
   const workbook = XLSX.utils.book_new()
@@ -9,7 +19,7 @@ export function writeExcel(dataSet: TaskDataSet): Uint8Array {
   const sortedFields = [...dataSet.fields].sort((a, b) => a.order - b.order)
 
   // === Sheet 1: Tasks ===
-  const headers = sortedFields.map((f) => f.name)
+  const headers = sortedFields.map((f) => sanitizeSpreadsheetText(f.name))
   const rows: unknown[][] = [headers]
 
   for (const task of dataSet.tasks) {
@@ -57,20 +67,20 @@ function formatValue(value: unknown, field: FieldDefinition): unknown {
   switch (field.type) {
     case 'select': {
       const option = field.options?.find((o) => o.id === value)
-      return option?.label ?? String(value)
+      return sanitizeSpreadsheetText(option?.label ?? String(value))
     }
     case 'multi_select':
     case 'person': {
-      if (Array.isArray(value)) return value.join(', ')
-      return String(value)
+      if (Array.isArray(value)) return sanitizeSpreadsheetText(value.join(', '))
+      return sanitizeSpreadsheetText(String(value))
     }
     case 'checkbox':
       return value ? 'Yes' : 'No'
     case 'number':
       return Number(value) || 0
     case 'date':
-      return value ? String(value) : ''
+      return value ? sanitizeSpreadsheetText(String(value)) : ''
     default:
-      return String(value)
+      return sanitizeSpreadsheetText(String(value))
   }
 }

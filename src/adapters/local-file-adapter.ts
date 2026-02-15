@@ -66,7 +66,7 @@ export class LocalFileAdapter implements DataAdapter {
 
   private parseBuffer(buffer: ArrayBuffer): TaskDataSet {
     if (this.fileType === 'xlsx') {
-      return parseExcel(buffer)
+      return validateTaskDataSet(parseExcel(buffer))
     }
 
     // JSON

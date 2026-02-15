@@ -3,7 +3,7 @@ import type { TaskDataSet, FieldDefinition, Task } from '@/types/task'
 import { createDefaultFields } from '@/types/task'
 import { generateId } from '@/lib/id'
 import type { ViewConfig } from '@/types/view'
-import { sanitizeColor } from '@/lib/sanitize'
+import { isSafeObjectKey, sanitizeColor, validateTaskDataSet } from '@/lib/sanitize'
 
 /** Excelファイル(ArrayBuffer)からTaskDataSetに変換 */
 export function parseExcel(data: ArrayBuffer): TaskDataSet {
@@ -125,13 +125,13 @@ export function parseExcel(data: ArrayBuffer): TaskDataSet {
 
   const normalized = applyOptionNormalization(fields, tasks)
 
-  return {
+  return validateTaskDataSet({
     version: '1.0.0',
     fields: normalized.fields,
     tasks: normalized.tasks,
     viewConfigs,
     metadata: { lastModified: new Date().toISOString(), source: 'local' },
-  }
+  })
 }
 
 /** ヘッダーとデータからフィールド定義を推論 */
@@ -236,7 +236,12 @@ function inferType(values: unknown[]): FieldDefinition['type'] {
 function isValidFieldDef(raw: unknown): raw is FieldDefinition {
   if (raw == null || typeof raw !== 'object') return false
   const f = raw as Record<string, unknown>
-  return typeof f.id === 'string' && typeof f.name === 'string' && typeof f.type === 'string'
+  return (
+    typeof f.id === 'string' &&
+    isSafeObjectKey(f.id) &&
+    typeof f.name === 'string' &&
+    typeof f.type === 'string'
+  )
 }
 
 /** _ViewConfigs の各要素が最低限の構造を持っているか検証 */

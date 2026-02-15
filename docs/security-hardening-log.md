@@ -97,3 +97,38 @@
 
 - `npm run build` — 型エラー・ビルドエラーなし（確認済み）
 - ブラウザ動作確認 — デモデータの表示、ファイルインポート/エクスポート
+
+---
+
+## 追加対策（2026-02-15）
+
+### 5. Excel/CSV Formula Injection（重要度: 高）
+
+**脅威**: 文字列セルが `=`, `+`, `-`, `@` で始まる場合、Excel/Spreadsheetで式として評価される可能性がある。
+
+**対策**: エクスポート時に該当値へ先頭 `'` を付与してテキスト化する。
+
+**変更箇所**:
+- `src/lib/excel/writer.ts` — `sanitizeSpreadsheetText()` を導入し、ヘッダーと文字列セルを無害化
+
+### 6. インポート/復元データのキー制約強化（重要度: 中）
+
+**脅威**: インポートデータ・永続化復元データに不正キー（`__proto__` 等）が混入すると、想定外のオブジェクト汚染や不整合につながる可能性がある。
+
+**対策**: キー許可ルール（英数字/`_`/`-`、最大64文字、危険キー除外）を導入し、
+`fieldValues` は「安全なキー」かつ「定義済みフィールドID」のみ採用する。
+
+**変更箇所**:
+- `src/lib/sanitize.ts` — `isSafeObjectKey()` 追加、`validateTaskDataSet()` の検証強化
+- `src/lib/excel/parser.ts` — `_FieldDefs` の `id` 検証強化、返却前に `validateTaskDataSet()` 適用
+- `src/adapters/local-file-adapter.ts` — XLSX読み込み経路でも共通バリデータを適用
+- `src/stores/task-store.ts` — `localStorage` 復元時に共通バリデータを適用（不正時はストレージ破棄して初期化）
+
+### 7. CSP（Content Security Policy）追加（重要度: 中）
+
+**脅威**: 将来的な実装変更時、XSS成立時の被害を抑えるブラウザ防御層が不足していた。
+
+**対策**: `index.html` にベースラインCSPを追加し、`object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'` などを適用。
+
+**変更箇所**:
+- `index.html` — CSPメタタグ追加

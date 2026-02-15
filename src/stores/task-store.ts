@@ -5,6 +5,7 @@ import type { Task, FieldDefinition, TaskDataSet, TaskFieldValues, SelectOption 
 import type { ViewConfig } from '@/types/view'
 import { createDefaultFields, SYSTEM_FIELD_IDS } from '@/types/task'
 import { generateId } from '@/lib/id'
+import { validateTaskDataSet } from '@/lib/sanitize'
 
 /** 後方互換性: person フィールドの値を string から string[] に変換 */
 function migratePersonFields(tasks: Task[], fields: FieldDefinition[]): Task[] {
@@ -399,8 +400,30 @@ export const useTaskStore = create<TaskState>()(
     }),
     onRehydrateStorage: () => (state) => {
       if (state) {
-        let tasks = state.tasks
-        let fields = state.fields
+        let validated: TaskDataSet
+        try {
+          validated = validateTaskDataSet({
+            version: '1.0.0',
+            fields: state.fields,
+            tasks: state.tasks,
+            viewConfigs: state.viewConfigs,
+            metadata: { lastModified: new Date().toISOString(), source: 'local' },
+          })
+        } catch {
+          localStorage.removeItem('task-storage')
+          useTaskStore.setState({
+            tasks: [],
+            fields: createDefaultFields(),
+            viewConfigs: [],
+            isLoaded: false,
+            isDirty: false,
+          })
+          return
+        }
+
+        let tasks = validated.tasks
+        let fields = validated.fields
+        const viewConfigs = validated.viewConfigs
 
         // 1. person フィールドのマイグレーション (string → string[])
         if (tasks.length > 0) {
@@ -450,6 +473,7 @@ export const useTaskStore = create<TaskState>()(
           useTaskStore.setState({
             tasks,
             fields: [...reorderedFields, ...missingFields],
+            viewConfigs,
           })
         }
       }
