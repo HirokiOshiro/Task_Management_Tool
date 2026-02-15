@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# Task Management Tool
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ブラウザ上で動作する、ローカル完結型のタスク管理ツールです。  
+テーブル / カンバン / ガント / カレンダーの4ビューで同じデータを管理できます。
 
-Currently, two official plugins are available:
+## 主な特徴
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 完全クライアントサイド動作（サーバー保存なし）
+- タスク・フィールド・ビュー設定を一元管理
+- JSON / Excel（.xlsx）で保存・再読み込み
+- CSV / Excel（.xlsx）インポート対応
+- 日本語 / 英語 UI 切り替え
 
-## React Compiler
+## クイックスタート（開発）
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+ビルド確認:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+## データ保存とセキュリティ上の注意
+
+- データは `localStorage` に自動保存されます（ページ再訪時に復元）。
+- 重要データは定期的に JSON でバックアップしてください（復元用途の推奨形式）。
+- 共有端末では利用後に保存し、必要に応じてブラウザ保存データを削除してください。
+- インポート時は安全性検証を行うため、不正構造や未対応キーを含むデータは取り込まれない場合があります。
+- Excelエクスポート時は Formula Injection 対策として、先頭が `=`, `+`, `-`, `@` の文字列をテキストとして保存します。
+
+## 想定利用上の補足
+
+- 機密情報を長期間 `localStorage` に保持する運用は非推奨です。
+- ブラウザデータ削除・端末変更時は `localStorage` 上のデータが失われます。
+
+## ドキュメント
+
+- アーキテクチャ: [docs/architecture.md](docs/architecture.md)
+- セキュリティ対策ログ: [docs/security-hardening-log.md](docs/security-hardening-log.md)
+
+## 技術スタック
+
+- React 19 / TypeScript / Vite
+- Zustand
+- Tailwind CSS
