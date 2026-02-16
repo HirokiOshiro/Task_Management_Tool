@@ -200,6 +200,8 @@ export const ja = {
     selectedCount: '件選択中 — ドラッグで一括移動',
     clearSelection: '解除',
     taskNamePlaceholder: 'タスク名を入力…',
+    monthView: '月',
+    twoWeeksView: '2週間',
   },
 
   // ── Calendar View ──
@@ -457,6 +459,8 @@ export type Locale = {
     selectedCount: string
     clearSelection: string
     taskNamePlaceholder: string
+    monthView: string
+    twoWeeksView: string
   }
   calendar: {
     monthFormat: string

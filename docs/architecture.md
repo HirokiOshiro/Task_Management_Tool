@@ -181,6 +181,19 @@ flowchart LR
 - **TaskDetailPanel**: `DependencyEditor` — dropdown with search filter, task name display, cycle check with toast warning
 - **TableView**: `DependencyInlineEditor` — compact inline version of the same editor
 
+### Gantt View Modes (2026-02-16)
+
+The Gantt chart supports two display modes, toggled via a segment control in the header:
+
+- **Month mode** (`DAY_WIDTH_MONTH = 32px`): Default. Shows a wide range (task span ± 3 months) for long-term planning.
+- **2 Weeks mode** (`DAY_WIDTH_2WEEKS = 64px`): Shows today ± 9 days with doubled day width for detailed short-term view.
+
+All pixel calculations (bar position, drag, marquee, dependency arrows) use the `dayWidth` variable derived from the current mode. Switching mode auto-scrolls to today's position.
+
+### Assignee Initials on Short Bars (2026-02-16)
+
+For task bars wider than 60px, assignee initials are displayed inside the bar (right-aligned). For narrower bars (e.g., 1-day tasks at 28px in month mode), initials are rendered outside the bar to the right, using theme-neutral styling (`bg-muted`, `border-border`) instead of the bar's color overlay.
+
 ### Gantt Arrow Rendering
 
 - SVG overlay layer inserted between task rows and the marquee rectangle

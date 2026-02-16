@@ -24,7 +24,8 @@ import { cn } from '@/lib/utils'
 import { TaskCheckButton } from '@/components/ui/TaskCheckButton'
 import { getAllDependencyEdges } from '@/lib/dependency-utils'
 
-const DAY_WIDTH = 32
+const DAY_WIDTH_MONTH = 32
+const DAY_WIDTH_2WEEKS = 64
 const ROW_HEIGHT = 36
 const HEADER_HEIGHT = 72
 const HANDLE_WIDTH = 8
@@ -81,6 +82,9 @@ export function GanttView() {
   const updateTaskFields = useTaskStore((s) => s.updateTaskFields)
   const addTask = useTaskStore((s) => s.addTask)
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
+
+  const [viewMode, setViewMode] = useState<'month' | '2weeks'>('month')
+  const dayWidth = viewMode === '2weeks' ? DAY_WIDTH_2WEEKS : DAY_WIDTH_MONTH
 
   const [dragState, setDragState] = useState<DragState | null>(null)
   const [fadingTaskIds, setFadingTaskIds] = useState<Set<string>>(new Set())
@@ -225,9 +229,21 @@ export function GanttView() {
     [groupConfig, activeView.id, updateView]
   )
 
-  // 表示範囲計算（前後3ヶ月のパディング付き）
+  // 表示範囲計算
   const { minDate, totalDays } = useMemo(() => {
     const today = startOfDay(new Date())
+
+    // 2週間モード: 今日を中心に前後9日
+    if (viewMode === '2weeks') {
+      const rangeStart = addDays(today, -9)
+      const rangeEnd = addDays(today, 9)
+      return {
+        minDate: rangeStart,
+        totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
+      }
+    }
+
+    // 月モード（前後3ヶ月のパディング付き）
     if (sortedGanttTasks.length === 0) {
       const rangeStart = startOfMonth(addMonths(today, -3))
       const rangeEnd = addDays(startOfMonth(addMonths(today, 4)), -1)
@@ -246,7 +262,7 @@ export function GanttView() {
       minDate: rangeStart,
       totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
     }
-  }, [sortedGanttTasks])
+  }, [sortedGanttTasks, viewMode])
 
   // 日付ヘッダー
   const days = useMemo(() => {
@@ -294,21 +310,21 @@ export function GanttView() {
   // 今日の位置にスクロールする関数
   const scrollToToday = useCallback(() => {
     if (containerRef.current && todayOffset >= 0) {
-      const scrollLeft = todayOffset * DAY_WIDTH - containerRef.current.clientWidth / 2 + 240
+      const scrollLeft = todayOffset * dayWidth - containerRef.current.clientWidth / 2 + 240
       containerRef.current.scrollTo({
         left: Math.max(0, scrollLeft),
         behavior: 'smooth',
       })
     }
-  }, [todayOffset])
+  }, [todayOffset, dayWidth])
 
   // 初回マウント時に今日の位置にスクロール
   useEffect(() => {
     if (containerRef.current && todayOffset >= 0) {
-      const scrollLeft = todayOffset * DAY_WIDTH - containerRef.current.clientWidth / 2 + 240
+      const scrollLeft = todayOffset * dayWidth - containerRef.current.clientWidth / 2 + 240
       containerRef.current.scrollLeft = Math.max(0, scrollLeft)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** ドラッグ中のタスクの表示位置を計算（一括ドラッグ対応） */
   const getDisplayDates = useCallback(
@@ -390,7 +406,7 @@ export function GanttView() {
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const deltaX = moveEvent.clientX - state.startX
-        const daysDelta = Math.round(deltaX / DAY_WIDTH)
+        const daysDelta = Math.round(deltaX / dayWidth)
         setDragState((prev) => (prev ? { ...prev, daysDelta } : null))
       }
 
@@ -448,7 +464,7 @@ export function GanttView() {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [updateTaskFields, selectedIds, sortedGanttTasks]
+    [updateTaskFields, selectedIds, sortedGanttTasks, dayWidth]
   )
 
   /** マーキー（範囲選択）ハンドラ — ガントバー領域の空白部分で発火 */
@@ -502,8 +518,8 @@ export function GanttView() {
             const barStartOffset = differenceInDays(gt.start, minDate)
             const barDuration = differenceInDays(gt.end, gt.start) + 1
             // バーのピクセル位置（タスク名列分オフセット）
-            const barLeft = TASK_NAME_WIDTH + barStartOffset * DAY_WIDTH + 2
-            const barRight = barLeft + Math.max(barDuration * DAY_WIDTH - 4, 20)
+            const barLeft = TASK_NAME_WIDTH + barStartOffset * dayWidth + 2
+            const barRight = barLeft + Math.max(barDuration * dayWidth - 4, 20)
             const barTop = HEADER_HEIGHT + rowIndex * ROW_HEIGHT + 6
             const barBottom = barTop + ROW_HEIGHT - 12
 
@@ -524,7 +540,7 @@ export function GanttView() {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [displayRows, minDate, selectedIds]
+    [displayRows, minDate, selectedIds, dayWidth]
   )
 
   /** マーキー矩形の CSS 用ピクセル座標 */
@@ -553,7 +569,7 @@ export function GanttView() {
       // 日程領域外（タスク名列内）は無視
       if (clickX < 0) return
 
-      const dayIndex = Math.floor(clickX / DAY_WIDTH)
+      const dayIndex = Math.floor(clickX / dayWidth)
       const clickedDate = addDays(minDate, dayIndex)
       const endDate = clickedDate
 
@@ -562,7 +578,7 @@ export function GanttView() {
       // 選択をクリア
       setSelectedIds(new Set())
     },
-    [minDate]
+    [minDate, dayWidth]
   )
 
   /** インラインタスク作成の確定 */
@@ -624,21 +640,48 @@ export function GanttView() {
 
   return (
     <div className="relative h-full">
-      {/* 今日ボタン（ヘッダー右上にフローティング） */}
-      {todayOffset >= 0 && (
-        <button
-          onClick={scrollToToday}
-          className="absolute right-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
-          style={{ top: (MONTH_HEADER_HEIGHT - 24) / 2 + 2 }}
-          title={t.gantt.scrollToToday}
-        >
-          <CalendarDays size={14} />
-          {t.common.today}
-        </button>
-      )}
+      {/* 表示モード切替 + 今日ボタン（ヘッダー右上にフローティング） */}
+      <div className="absolute right-4 z-30 flex items-center gap-2" style={{ top: (MONTH_HEADER_HEIGHT - 24) / 2 + 2 }}>
+        {/* 表示モード切替 */}
+        <div className="flex items-center rounded-md bg-muted/80 p-0.5 shadow-md">
+          <button
+            onClick={() => setViewMode('month')}
+            className={cn(
+              "px-2 py-0.5 rounded text-xs font-medium transition-colors",
+              viewMode === 'month'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.gantt.monthView}
+          </button>
+          <button
+            onClick={() => setViewMode('2weeks')}
+            className={cn(
+              "px-2 py-0.5 rounded text-xs font-medium transition-colors",
+              viewMode === '2weeks'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.gantt.twoWeeksView}
+          </button>
+        </div>
+        {/* 今日ボタン */}
+        {todayOffset >= 0 && (
+          <button
+            onClick={scrollToToday}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
+            title={t.gantt.scrollToToday}
+          >
+            <CalendarDays size={14} />
+            {t.common.today}
+          </button>
+        )}
+      </div>
       <div className="h-full overflow-auto" ref={containerRef}>
       <div
-        style={{ width: TASK_NAME_WIDTH + totalDays * DAY_WIDTH, minHeight: '100%' }}
+        style={{ width: TASK_NAME_WIDTH + totalDays * dayWidth, minHeight: '100%' }}
         className={cn('relative', (dragState || marquee) ? 'select-none' : '')}
         onMouseDown={handleMarqueeStart}
         onDoubleClick={handleChartDoubleClick}
@@ -658,7 +701,7 @@ export function GanttView() {
                 <div
                   key={i}
                   className="flex items-center justify-center border-r border-b border-border text-xs font-semibold text-foreground bg-muted/30"
-                  style={{ width: mh.span * DAY_WIDTH }}
+                  style={{ width: mh.span * dayWidth }}
                 >
                   {mh.label}
                 </div>
@@ -680,7 +723,7 @@ export function GanttView() {
                           ? 'bg-muted/50 text-muted-foreground'
                           : 'text-muted-foreground'
                     } ${isFirstOfMonth ? 'border-l border-l-border' : ''}`}
-                    style={{ width: DAY_WIDTH, height: HEADER_HEIGHT - MONTH_HEADER_HEIGHT }}
+                    style={{ width: dayWidth, height: HEADER_HEIGHT - MONTH_HEADER_HEIGHT }}
                   >
                     <span>{format(day, 'd')}</span>
                     <span className="text-[10px]">{format(day, 'E', { locale: dateFnsLocale })}</span>
@@ -721,7 +764,7 @@ export function GanttView() {
                   {todayOffset >= 0 && todayOffset < totalDays && (
                     <div
                       className="absolute top-0 h-full w-px bg-primary/50"
-                      style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                      style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
                     />
                   )}
                 </div>
@@ -733,7 +776,7 @@ export function GanttView() {
           const { start, end } = getDisplayDates(task)
           const startOffset = differenceInDays(start, minDate)
           const duration = differenceInDays(end, start) + 1
-          const barWidth = Math.max(duration * DAY_WIDTH - 4, 20)
+          const barWidth = Math.max(duration * dayWidth - 4, 20)
           const isDragging = dragState?.taskId === task.id
           const isBatchTarget = !!(dragState?.batchTargets?.some((b) => b.id === task.id))
           const isSelected = selectedIds.has(task.id)
@@ -783,7 +826,7 @@ export function GanttView() {
                 {todayOffset >= 0 && todayOffset < totalDays && (
                   <div
                     className="absolute top-0 h-full w-px bg-primary/50"
-                    style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                    style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
                   />
                 )}
                 {/* バー */}
@@ -797,7 +840,7 @@ export function GanttView() {
                         : 'hover:opacity-90',
                   )}
                   style={{
-                    left: startOffset * DAY_WIDTH + 2,
+                    left: startOffset * dayWidth + 2,
                     width: barWidth,
                     height: ROW_HEIGHT - 12,
                     backgroundColor: sanitizeColor(task.color),
@@ -824,23 +867,47 @@ export function GanttView() {
                   )}>{task.title}</span>
 
                   {/* 担当者イニシャル */}
-                  {task.assignees.length > 0 && barWidth > 60 && (
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10">
-                      {task.assignees.slice(0, barWidth > 120 ? 3 : 1).map((name, idx) => (
-                        <div
-                          key={idx}
-                          className="flex h-4 w-4 items-center justify-center rounded-full bg-white/30 text-[9px] font-medium text-white flex-shrink-0"
-                          title={name}
-                        >
-                          {name.charAt(0)}
-                        </div>
-                      ))}
-                      {task.assignees.length > (barWidth > 120 ? 3 : 1) && (
-                        <span className="text-[8px] text-white/70 flex-shrink-0">
-                          +{task.assignees.length - (barWidth > 120 ? 3 : 1)}
-                        </span>
-                      )}
-                    </div>
+                  {task.assignees.length > 0 && (
+                    barWidth > 60 ? (
+                      // バー内右端に配置
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10">
+                        {task.assignees.slice(0, barWidth > 120 ? 3 : 1).map((name, idx) => (
+                          <div
+                            key={idx}
+                            className="flex h-4 w-4 items-center justify-center rounded-full bg-white/30 text-[9px] font-medium text-white flex-shrink-0"
+                            title={name}
+                          >
+                            {name.charAt(0)}
+                          </div>
+                        ))}
+                        {task.assignees.length > (barWidth > 120 ? 3 : 1) && (
+                          <span className="text-[8px] text-white/70 flex-shrink-0">
+                            +{task.assignees.length - (barWidth > 120 ? 3 : 1)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      // バー右外側に配置（短いバー用）
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 pointer-events-none"
+                        style={{ left: barWidth + 4 }}
+                      >
+                        {task.assignees.slice(0, 1).map((name, idx) => (
+                          <div
+                            key={idx}
+                            className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground flex-shrink-0 border border-border"
+                            title={name}
+                          >
+                            {name.charAt(0)}
+                          </div>
+                        ))}
+                        {task.assignees.length > 1 && (
+                          <span className="text-[8px] text-muted-foreground flex-shrink-0">
+                            +{task.assignees.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    )
                   )}
 
                   {/* 右端リサイズハンドル */}
@@ -858,7 +925,7 @@ export function GanttView() {
                   <div
                     className="absolute z-30 rounded bg-foreground/90 px-2 py-0.5 text-[10px] text-background whitespace-nowrap pointer-events-none"
                     style={{
-                      left: startOffset * DAY_WIDTH + 2,
+                      left: startOffset * dayWidth + 2,
                       top: ROW_HEIGHT - 10,
                     }}
                   >
@@ -906,18 +973,18 @@ export function GanttView() {
               {todayOffset >= 0 && todayOffset < totalDays && (
                 <div
                   className="absolute top-0 h-full w-px bg-primary/50"
-                  style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                  style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
                 />
               )}
               {(() => {
                 const previewStart = differenceInDays(inlineCreate.startDate, minDate)
                 const previewDuration = differenceInDays(inlineCreate.endDate, inlineCreate.startDate) + 1
-                const previewWidth = Math.max(previewDuration * DAY_WIDTH - 4, 20)
+                const previewWidth = Math.max(previewDuration * dayWidth - 4, 20)
                 return (
                   <div
                     className="absolute top-1.5 flex items-center rounded-md text-xs text-white/80 shadow-sm border-2 border-dashed border-primary/60"
                     style={{
-                      left: previewStart * DAY_WIDTH + 2,
+                      left: previewStart * dayWidth + 2,
                       width: previewWidth,
                       height: ROW_HEIGHT - 12,
                       backgroundColor: 'var(--color-primary)',
@@ -954,7 +1021,7 @@ export function GanttView() {
               {todayOffset >= 0 && todayOffset < totalDays && (
                 <div
                   className="absolute top-0 h-full w-px bg-primary/50"
-                  style={{ left: todayOffset * DAY_WIDTH + DAY_WIDTH / 2 }}
+                  style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
                 />
               )}
             </div>
@@ -966,7 +1033,7 @@ export function GanttView() {
           <svg
             className="absolute top-0 left-0 pointer-events-none"
             style={{
-              width: TASK_NAME_WIDTH + totalDays * DAY_WIDTH,
+              width: TASK_NAME_WIDTH + totalDays * dayWidth,
               height: HEADER_HEIGHT + displayRows.length * ROW_HEIGHT,
             }}
           >
@@ -1002,11 +1069,11 @@ export function GanttView() {
               const toStartOffset = differenceInDays(toDates.start, minDate)
 
               // 先行タスクバーの右端中央
-              const x1 = TASK_NAME_WIDTH + (fromEndOffset + 1) * DAY_WIDTH - 2
+              const x1 = TASK_NAME_WIDTH + (fromEndOffset + 1) * dayWidth - 2
               const y1 = HEADER_HEIGHT + fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2
 
               // 後続タスクバーの左端中央
-              const x2 = TASK_NAME_WIDTH + toStartOffset * DAY_WIDTH + 2
+              const x2 = TASK_NAME_WIDTH + toStartOffset * dayWidth + 2
               const y2 = HEADER_HEIGHT + toIdx * ROW_HEIGHT + ROW_HEIGHT / 2
 
               // 水平距離に応じてカーブの制御点を調整

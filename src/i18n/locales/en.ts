@@ -202,6 +202,8 @@ export const en: Locale = {
     selectedCount: ' selected — drag to move together',
     clearSelection: 'Clear',
     taskNamePlaceholder: 'Enter task name…',
+    monthView: 'Month',
+    twoWeeksView: '2 Weeks',
   },
 
   // ── Calendar View ──
