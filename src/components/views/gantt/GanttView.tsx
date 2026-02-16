@@ -229,21 +229,9 @@ export function GanttView() {
     [groupConfig, activeView.id, updateView]
   )
 
-  // 表示範囲計算
+  // 表示範囲計算（両モード共通: タスク範囲 ± 3ヶ月）
   const { minDate, totalDays } = useMemo(() => {
     const today = startOfDay(new Date())
-
-    // 2週間モード: 今日を中心に前後9日
-    if (viewMode === '2weeks') {
-      const rangeStart = addDays(today, -9)
-      const rangeEnd = addDays(today, 9)
-      return {
-        minDate: rangeStart,
-        totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
-      }
-    }
-
-    // 月モード（前後3ヶ月のパディング付き）
     if (sortedGanttTasks.length === 0) {
       const rangeStart = startOfMonth(addMonths(today, -3))
       const rangeEnd = addDays(startOfMonth(addMonths(today, 4)), -1)
@@ -262,7 +250,7 @@ export function GanttView() {
       minDate: rangeStart,
       totalDays: differenceInDays(rangeEnd, rangeStart) + 1,
     }
-  }, [sortedGanttTasks, viewMode])
+  }, [sortedGanttTasks])
 
   // 日付ヘッダー
   const days = useMemo(() => {
@@ -640,45 +628,6 @@ export function GanttView() {
 
   return (
     <div className="relative h-full">
-      {/* 表示モード切替 + 今日ボタン（ヘッダー右上にフローティング） */}
-      <div className="absolute right-4 z-30 flex items-center gap-2" style={{ top: (MONTH_HEADER_HEIGHT - 24) / 2 + 2 }}>
-        {/* 表示モード切替 */}
-        <div className="flex items-center rounded-md bg-muted/80 p-0.5 shadow-md">
-          <button
-            onClick={() => setViewMode('month')}
-            className={cn(
-              "px-2 py-0.5 rounded text-xs font-medium transition-colors",
-              viewMode === 'month'
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t.gantt.monthView}
-          </button>
-          <button
-            onClick={() => setViewMode('2weeks')}
-            className={cn(
-              "px-2 py-0.5 rounded text-xs font-medium transition-colors",
-              viewMode === '2weeks'
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t.gantt.twoWeeksView}
-          </button>
-        </div>
-        {/* 今日ボタン */}
-        {todayOffset >= 0 && (
-          <button
-            onClick={scrollToToday}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors text-xs font-medium"
-            title={t.gantt.scrollToToday}
-          >
-            <CalendarDays size={14} />
-            {t.common.today}
-          </button>
-        )}
-      </div>
       <div className="h-full overflow-auto" ref={containerRef}>
       <div
         style={{ width: TASK_NAME_WIDTH + totalDays * dayWidth, minHeight: '100%' }}
@@ -688,10 +637,50 @@ export function GanttView() {
       >
         {/* ヘッダー */}
         <div className="sticky top-0 z-10 flex border-b border-border bg-background">
-          {/* タスク名カラム */}
-          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background px-3 flex items-end pb-1 gap-3">
-            <div className="text-xs font-medium text-muted-foreground flex-shrink-0">{t.common.done}</div>
-            <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
+          {/* タスク名カラム（2段構造: 上段ボタン + 下段ラベル） */}
+          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background flex flex-col justify-between">
+            {/* 上段: モード切替 + 今日ボタン */}
+            <div className="flex items-center gap-1.5 px-2 pt-1.5">
+              <div className="flex items-center rounded bg-muted p-0.5">
+                <button
+                  onClick={() => setViewMode('month')}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
+                    viewMode === 'month'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t.gantt.monthView}
+                </button>
+                <button
+                  onClick={() => setViewMode('2weeks')}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
+                    viewMode === '2weeks'
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t.gantt.twoWeeksView}
+                </button>
+              </div>
+              {todayOffset >= 0 && (
+                <button
+                  onClick={scrollToToday}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                  title={t.gantt.scrollToToday}
+                >
+                  <CalendarDays size={12} />
+                  {t.common.today}
+                </button>
+              )}
+            </div>
+            {/* 下段: カラムラベル */}
+            <div className="flex items-center gap-3 px-3 pb-1">
+              <div className="text-xs font-medium text-muted-foreground flex-shrink-0">{t.common.done}</div>
+              <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
+            </div>
           </div>
           {/* 日付ヘッダー */}
           <div className="flex flex-col">
