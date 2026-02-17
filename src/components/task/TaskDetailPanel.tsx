@@ -441,6 +441,7 @@ function SortablePersonRow({ id, onRemove }: { id: string; onRemove: () => void 
     <div
       ref={setNodeRef}
       style={style}
+      onMouseDown={(e) => e.preventDefault()}
       className={cn(
         'group flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs',
         isDragging && 'opacity-50'
@@ -509,7 +510,11 @@ function DetailMultiSelectEditor({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
 
+  // D&D操作中のonBlur発火を抑制するフラグ
+  const isDraggingRef = useRef(false)
+
   const handleDragEnd = (event: DragEndEvent) => {
+    isDraggingRef.current = false
     const { active, over } = event
     if (over && active.id !== over.id) {
       const oldIndex = selected.indexOf(String(active.id))
@@ -523,7 +528,7 @@ function DetailMultiSelectEditor({
   return (
     <div className="rounded border border-input bg-background p-2">
       {field.type === 'person' && selected.length > 0 && (
-        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragStart={() => { isDraggingRef.current = true }} onDragEnd={handleDragEnd}>
           <SortableContext items={selected} strategy={verticalListSortingStrategy}>
             <div className="space-y-1 mb-2">
               {selected.map((v) => (
@@ -587,7 +592,10 @@ function DetailMultiSelectEditor({
             setSelected((prev) => [...prev, ...newTags])
           }
         }}
-        onBlur={() => onSave(selected.length > 0 ? selected : undefined)}
+        onBlur={() => {
+          if (isDraggingRef.current) return
+          onSave(selected.length > 0 ? selected : undefined)
+        }}
         placeholder={t.taskDetail.tagsPlaceholder}
         className="w-full text-sm outline-none bg-transparent"
         autoFocus
