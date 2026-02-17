@@ -19,6 +19,7 @@ interface ViewState {
   setSorts: (sorts: SortConfig[]) => void
   setFilters: (filters: FilterRule[]) => void
   setGroup: (group: GroupConfig | undefined) => void
+  setKanbanGroupFieldId: (fieldId: string) => void
 }
 
 /** デフォルトビュー生成 */
@@ -171,6 +172,15 @@ export const useViewStore = create<ViewState>()(
         const view = state.views.find((v) => v.id === state.activeViewId)
         if (view) {
           view.group = group
+        }
+      })
+    },
+
+    setKanbanGroupFieldId: (fieldId) => {
+      set((state) => {
+        const view = state.views.find((v) => v.id === state.activeViewId)
+        if (view) {
+          view.kanbanGroupFieldId = fieldId
         }
       })
     },

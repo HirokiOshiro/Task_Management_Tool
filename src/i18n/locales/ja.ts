@@ -189,6 +189,7 @@ export const ja = {
   // ── Kanban View ──
   kanban: {
     uncategorized: '未分類',
+    groupBy: 'グループ化',
   },
 
   // ── Gantt View ──
@@ -450,7 +451,7 @@ export type Locale = {
     deleteTask: string
     enterToAdd: string
   }
-  kanban: { uncategorized: string }
+  kanban: { uncategorized: string; groupBy: string }
   gantt: {
     emptyMessage: string
     taskName: string

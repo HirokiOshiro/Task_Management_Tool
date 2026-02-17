@@ -22,27 +22,86 @@ import type { Task } from '@/types/task'
 import { cn } from '@/lib/utils'
 import { sanitizeColor } from '@/lib/sanitize'
 import { Plus } from 'lucide-react'
-import { useI18n, translateOptionLabel } from '@/i18n'
+import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
 
 export function KanbanView() {
   const { updateTask, addTask } = useTaskStore()
   const { filteredTasks: tasks, fields } = useFilteredTasks()
   const openDetailPanel = useUIStore((s) => s.openDetailPanel)
   const activeView = useViewStore((s) => s.getActiveView())
+  const setKanbanGroupFieldId = useViewStore((s) => s.setKanbanGroupFieldId)
   const groupFieldId = activeView.kanbanGroupFieldId ?? SYSTEM_FIELD_IDS.STATUS
   const groupField = fields.find((f) => f.id === groupFieldId)
   const options = groupField?.options ?? []
   const { t } = useI18n()
 
+  // グループ化に使えるフィールド（select, multi_select, person型）
+  const groupableFields = useMemo(() =>
+    fields.filter((f) => f.type === 'select' || f.type === 'multi_select' || f.type === 'person'),
+    [fields]
+  )
+
   const [activeId, setActiveId] = useState<string | null>(null)
 
-  // カラムデータ
+  // カラムデータ（フィールドタイプ別に分岐）
   const columns = useMemo(() => {
+    if (!groupField) return []
+
+    // person型: 全タスクから担当者名を収集してカラム化
+    if (groupField.type === 'person') {
+      const personSet = new Set<string>()
+      tasks.forEach((tk) => {
+        const val = tk.fieldValues[groupFieldId]
+        if (Array.isArray(val)) {
+          (val as string[]).forEach((p) => personSet.add(p))
+        } else if (typeof val === 'string' && val) {
+          personSet.add(val)
+        }
+      })
+      const cols = Array.from(personSet).sort().map((person) => ({
+        id: person,
+        label: person,
+        color: '#6366f1',
+        tasks: tasks.filter((tk) => {
+          const val = tk.fieldValues[groupFieldId]
+          return Array.isArray(val) ? (val as string[]).includes(person) : val === person
+        }),
+      }))
+      const unassigned = tasks.filter((tk) => {
+        const val = tk.fieldValues[groupFieldId]
+        return !val || (Array.isArray(val) && (val as string[]).length === 0)
+      })
+      if (unassigned.length > 0) {
+        cols.push({ id: '__unassigned__', label: t.kanban.uncategorized, color: '#94a3b8', tasks: unassigned })
+      }
+      return cols
+    }
+
+    // multi_select型: 各オプションをカラムに（タスクが複数カラムに表示される場合あり）
+    if (groupField.type === 'multi_select') {
+      const opts = groupField.options ?? []
+      const cols = opts.map((option) => ({
+        ...option,
+        tasks: tasks.filter((tk) => {
+          const val = tk.fieldValues[groupFieldId]
+          return Array.isArray(val) ? (val as string[]).includes(option.id) : val === option.id
+        }),
+      }))
+      const unassigned = tasks.filter((tk) => {
+        const val = tk.fieldValues[groupFieldId]
+        return !val || (Array.isArray(val) && (val as string[]).length === 0)
+      })
+      if (unassigned.length > 0) {
+        cols.push({ id: '__unassigned__', label: t.kanban.uncategorized, color: '#94a3b8', tasks: unassigned })
+      }
+      return cols
+    }
+
+    // select型（既存ロジック）
     const cols = options.map((option) => ({
       ...option,
       tasks: tasks.filter((tk) => tk.fieldValues[groupFieldId] === option.id),
     }))
-    // 未分類
     const unassigned = tasks.filter(
       (tk) => !options.some((o) => o.id === tk.fieldValues[groupFieldId])
     )
@@ -55,7 +114,7 @@ export function KanbanView() {
       })
     }
     return cols
-  }, [tasks, options, groupFieldId])
+  }, [tasks, options, groupFieldId, groupField, t])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -67,6 +126,44 @@ export function KanbanView() {
     setActiveId(String(event.active.id))
   }, [])
 
+  // フィールドタイプに応じた値解決
+  const resolveNewValue = useCallback(
+    (task: Task, targetColumnId: string): unknown => {
+      if (targetColumnId === '__unassigned__') return undefined
+      if (!groupField) return targetColumnId
+
+      if (groupField.type === 'person') {
+        // 担当者を置換: ドラッグ元カラムの担当者を除去し、ドロップ先の担当者に置換
+        const current = task.fieldValues[groupFieldId]
+        const arr = Array.isArray(current) ? [...current as string[]] : []
+        // 現在のカラム（タスクが表示されているカラム）の担当者を特定するため、
+        // arrから対象外の全カラムIDを残し、targetColumnIdを追加
+        const sourceColumnId = findSourceColumn(task, columns)
+        const filtered = sourceColumnId ? arr.filter((p) => p !== sourceColumnId) : arr
+        if (!filtered.includes(targetColumnId)) {
+          return [targetColumnId, ...filtered]
+        }
+        return filtered.length > 0 ? filtered : [targetColumnId]
+      }
+
+      if (groupField.type === 'multi_select') {
+        // ドラッグ元オプションを除去し、ドロップ先オプションを追加
+        const current = task.fieldValues[groupFieldId]
+        const arr = Array.isArray(current) ? [...current as string[]] : []
+        const sourceColumnId = findSourceColumn(task, columns)
+        const filtered = sourceColumnId ? arr.filter((v) => v !== sourceColumnId) : arr
+        if (!filtered.includes(targetColumnId)) {
+          filtered.push(targetColumnId)
+        }
+        return filtered
+      }
+
+      // select型
+      return targetColumnId
+    },
+    [groupField, groupFieldId, columns]
+  )
+
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
       const { active, over } = event
@@ -75,17 +172,18 @@ export function KanbanView() {
       const activeTaskId = String(active.id)
       const overId = String(over.id)
 
-      // ドロップ先がカラム（column-xxx）の場合
       if (overId.startsWith('column-')) {
         const targetColumnId = overId.replace('column-', '')
-        const newValue = targetColumnId === '__unassigned__' ? undefined : targetColumnId
         const task = tasks.find((tk) => tk.id === activeTaskId)
-        if (task && task.fieldValues[groupFieldId] !== newValue) {
-          updateTask(activeTaskId, groupFieldId, newValue)
+        if (task) {
+          const newValue = resolveNewValue(task, targetColumnId)
+          if (JSON.stringify(task.fieldValues[groupFieldId]) !== JSON.stringify(newValue)) {
+            updateTask(activeTaskId, groupFieldId, newValue)
+          }
         }
       }
     },
-    [tasks, groupFieldId, updateTask]
+    [tasks, groupFieldId, updateTask, resolveNewValue]
   )
 
   const handleDragEnd = useCallback(
@@ -97,67 +195,105 @@ export function KanbanView() {
       const activeTaskId = String(active.id)
       const overId = String(over.id)
 
-      // ドロップ先がカラムの場合
       if (overId.startsWith('column-')) {
         const targetColumnId = overId.replace('column-', '')
-        const newValue = targetColumnId === '__unassigned__' ? undefined : targetColumnId
-        updateTask(activeTaskId, groupFieldId, newValue)
+        const task = tasks.find((tk) => tk.id === activeTaskId)
+        if (task) {
+          updateTask(activeTaskId, groupFieldId, resolveNewValue(task, targetColumnId))
+        }
         return
       }
 
       // ドロップ先が別のタスクの場合 - そのタスクのカラムに移動
       const overTask = tasks.find((tk) => tk.id === overId)
       if (overTask) {
-        const overColumnValue = overTask.fieldValues[groupFieldId]
-        const activeTask = tasks.find((tk) => tk.id === activeTaskId)
-        if (activeTask && activeTask.fieldValues[groupFieldId] !== overColumnValue) {
-          updateTask(activeTaskId, groupFieldId, overColumnValue)
+        const overColumnId = findSourceColumn(overTask, columns)
+        if (overColumnId) {
+          const activeTaskObj = tasks.find((tk) => tk.id === activeTaskId)
+          if (activeTaskObj) {
+            updateTask(activeTaskId, groupFieldId, resolveNewValue(activeTaskObj, overColumnId))
+          }
         }
       }
     },
-    [tasks, groupFieldId, updateTask]
+    [tasks, groupFieldId, updateTask, resolveNewValue, columns]
   )
 
   const handleAddTask = useCallback(
     (columnId: string) => {
-      const value = columnId === '__unassigned__' ? undefined : columnId
+      const fieldType = groupField?.type
+      let value: unknown
+      if (columnId === '__unassigned__') {
+        value = undefined
+      } else if (fieldType === 'person') {
+        value = [columnId]
+      } else if (fieldType === 'multi_select') {
+        value = [columnId]
+      } else {
+        value = columnId
+      }
       const task = addTask({
         [SYSTEM_FIELD_IDS.TITLE]: '',
         [groupFieldId]: value,
       })
       openDetailPanel(task.id)
     },
-    [addTask, groupFieldId, openDetailPanel]
+    [addTask, groupFieldId, groupField, openDetailPanel]
   )
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex h-full gap-3 overflow-x-auto p-4">
-        {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            groupFieldId={groupFieldId}
-            fields={fields}
-            onCardClick={openDetailPanel}
-            onAddTask={() => handleAddTask(column.id)}
-          />
-        ))}
+    <div className="flex h-full flex-col">
+      {/* グループ化フィールド選択 */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border flex-shrink-0">
+        <label className="text-xs text-muted-foreground">{t.kanban.groupBy}</label>
+        <select
+          value={groupFieldId}
+          onChange={(e) => setKanbanGroupFieldId(e.target.value)}
+          className="rounded border border-input bg-background px-2 py-1 text-xs"
+        >
+          {groupableFields.map((f) => (
+            <option key={f.id} value={f.id}>{translateFieldName(t, f.id, f.name)}</option>
+          ))}
+        </select>
       </div>
 
-      <DragOverlay>
-        {activeTask ? (
-          <KanbanCardContent task={activeTask} fields={fields} isDragging />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-1 gap-3 overflow-x-auto p-4">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              groupFieldId={groupFieldId}
+              fields={fields}
+              onCardClick={openDetailPanel}
+              onAddTask={() => handleAddTask(column.id)}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeTask ? (
+            <KanbanCardContent task={activeTask} fields={fields} isDragging />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   )
+}
+
+/** タスクが表示されているカラムを特定 */
+function findSourceColumn(
+  task: Task,
+  columns: { id: string; tasks: Task[] }[]
+): string | undefined {
+  const col = columns.find((c) => c.tasks.some((t) => t.id === task.id))
+  return col?.id
 }
 
 /** カラムコンポーネント */

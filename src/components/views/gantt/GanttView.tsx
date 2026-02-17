@@ -636,9 +636,9 @@ export function GanttView() {
         onDoubleClick={handleChartDoubleClick}
       >
         {/* ヘッダー */}
-        <div className="sticky top-0 z-10 flex border-b border-border bg-background">
+        <div className="sticky top-0 z-20 flex border-b border-border bg-background">
           {/* タスク名カラム（2段構造: 上段ボタン + 下段ラベル） */}
-          <div className="sticky left-0 z-20 w-60 flex-shrink-0 border-r border-border bg-background flex flex-col justify-between">
+          <div className="sticky left-0 z-30 w-60 flex-shrink-0 border-r border-border bg-background flex flex-col justify-between">
             {/* 上段: モード切替 + 今日ボタン */}
             <div className="flex items-center gap-1.5 px-2 pt-1.5">
               <div className="flex items-center rounded bg-muted p-0.5">
@@ -858,9 +858,12 @@ export function GanttView() {
                   {/* 担当者イニシャル */}
                   {task.assignees.length > 0 && (
                     barWidth > 60 ? (
-                      // バー内右端に配置
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10">
-                        {task.assignees.slice(0, barWidth > 120 ? 3 : 1).map((name, idx) => (
+                      // バー内右端に配置 — 全員表示（はみ出し分は非表示）
+                      <div
+                        className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 overflow-hidden"
+                        style={{ maxWidth: Math.max(barWidth - 40, 0) }}
+                      >
+                        {task.assignees.map((name, idx) => (
                           <div
                             key={idx}
                             className="flex h-4 w-4 items-center justify-center rounded-full bg-white/30 text-[9px] font-medium text-white flex-shrink-0"
@@ -869,19 +872,14 @@ export function GanttView() {
                             {name.charAt(0)}
                           </div>
                         ))}
-                        {task.assignees.length > (barWidth > 120 ? 3 : 1) && (
-                          <span className="text-[8px] text-white/70 flex-shrink-0">
-                            +{task.assignees.length - (barWidth > 120 ? 3 : 1)}
-                          </span>
-                        )}
                       </div>
                     ) : (
-                      // バー右外側に配置（短いバー用）
+                      // バー右外側に配置（短いバー用） — 全員表示
                       <div
                         className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 pointer-events-none"
                         style={{ left: barWidth + 4 }}
                       >
-                        {task.assignees.slice(0, 1).map((name, idx) => (
+                        {task.assignees.map((name, idx) => (
                           <div
                             key={idx}
                             className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground flex-shrink-0 border border-border"
@@ -890,11 +888,6 @@ export function GanttView() {
                             {name.charAt(0)}
                           </div>
                         ))}
-                        {task.assignees.length > 1 && (
-                          <span className="text-[8px] text-muted-foreground flex-shrink-0">
-                            +{task.assignees.length - 1}
-                          </span>
-                        )}
                       </div>
                     )
                   )}

@@ -191,6 +191,7 @@ export const en: Locale = {
   // ── Kanban View ──
   kanban: {
     uncategorized: 'Uncategorized',
+    groupBy: 'Group by',
   },
 
   // ── Gantt View ──

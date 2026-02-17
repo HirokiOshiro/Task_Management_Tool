@@ -3,7 +3,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { X, Trash2, StickyNote, SlidersHorizontal } from 'lucide-react'
+import { X, Trash2, StickyNote, SlidersHorizontal, GripVertical } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
@@ -12,6 +12,21 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FieldOptionModal } from '@/components/fields/FieldOptionModal'
 import { buildDependencyGraph, wouldCreateCycle } from '@/lib/dependency-utils'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 export function TaskDetailPanel() {
   const { detailPanelOpen, selectedTaskId } = useUIStore()
@@ -415,6 +430,34 @@ function DetailEditor({
   }
 }
 
+/** 担当者チップ（ドラッグ並べ替え対応） */
+function SortablePersonChip({ id, onRemove }: { id: string; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+  return (
+    <span
+      ref={setNodeRef}
+      style={style}
+      className="inline-flex items-center gap-0.5 rounded-full bg-accent px-2 py-0.5 text-xs"
+    >
+      <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground">
+        <GripVertical size={10} />
+      </span>
+      {id}
+      <span
+        className="cursor-pointer hover:text-destructive ml-0.5"
+        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onRemove() }}
+      >
+        &times;
+      </span>
+    </span>
+  )
+}
+
 function DetailMultiSelectEditor({
   field,
   value,
@@ -459,19 +502,44 @@ function DetailMultiSelectEditor({
     return (field.options ?? []).filter(o => !selected.includes(o.label))
   }, [field, tasks, selected])
 
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = selected.indexOf(String(active.id))
+      const newIndex = selected.indexOf(String(over.id))
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setSelected(arrayMove(selected, oldIndex, newIndex))
+      }
+    }
+  }
+
   return (
     <div className="rounded border border-input bg-background p-2">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex flex-wrap gap-1">
-          {selected.map((v) => (
-            <span
-              key={v}
-              className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
-              onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
-            >
-              {v} &times;
-            </span>
-          ))}
+          {field.type === 'person' ? (
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={selected} strategy={horizontalListSortingStrategy}>
+                {selected.map((v) => (
+                  <SortablePersonChip key={v} id={v} onRemove={() => toggle(v)} />
+                ))}
+              </SortableContext>
+            </DndContext>
+          ) : (
+            selected.map((v) => (
+              <span
+                key={v}
+                className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs cursor-pointer hover:bg-destructive/10"
+                onMouseDown={(e) => { e.preventDefault(); toggle(v) }}
+              >
+                {v} &times;
+              </span>
+            ))
+          )}
         </div>
         {field.type === 'multi_select' && (
           <button
