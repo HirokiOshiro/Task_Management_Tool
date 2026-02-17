@@ -22,7 +22,7 @@ import {
 } from '@dnd-kit/core'
 import {
   SortableContext,
-  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   arrayMove,
 } from '@dnd-kit/sortable'
@@ -430,31 +430,34 @@ function DetailEditor({
   }
 }
 
-/** 担当者チップ（ドラッグ並べ替え対応） */
-function SortablePersonChip({ id, onRemove }: { id: string; onRemove: () => void }) {
+/** 担当者行（ドラッグ並べ替え対応 — 業務プロパティと同形式） */
+function SortablePersonRow({ id, onRemove }: { id: string; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   }
   return (
-    <span
+    <div
       ref={setNodeRef}
       style={style}
-      className="inline-flex items-center gap-0.5 rounded-full bg-accent px-2 py-0.5 text-xs"
+      className={cn(
+        'group flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs',
+        isDragging && 'opacity-50'
+      )}
     >
-      <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground">
-        <GripVertical size={10} />
-      </span>
-      {id}
-      <span
-        className="cursor-pointer hover:text-destructive ml-0.5"
-        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onRemove() }}
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+        <GripVertical size={12} className="text-muted-foreground/40" />
+      </div>
+      <span className="flex-1 truncate">{id}</span>
+      <button
+        onClick={onRemove}
+        onMouseDown={(e) => e.stopPropagation()}
+        className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
       >
-        &times;
-      </span>
-    </span>
+        <Trash2 size={12} />
+      </button>
+    </div>
   )
 }
 
@@ -519,17 +522,20 @@ function DetailMultiSelectEditor({
 
   return (
     <div className="rounded border border-input bg-background p-2">
+      {field.type === 'person' && selected.length > 0 && (
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={selected} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1 mb-2">
+              {selected.map((v) => (
+                <SortablePersonRow key={v} id={v} onRemove={() => toggle(v)} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex flex-wrap gap-1">
-          {field.type === 'person' ? (
-            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={selected} strategy={horizontalListSortingStrategy}>
-                {selected.map((v) => (
-                  <SortablePersonChip key={v} id={v} onRemove={() => toggle(v)} />
-                ))}
-              </SortableContext>
-            </DndContext>
-          ) : (
+          {field.type !== 'person' && (
             selected.map((v) => (
               <span
                 key={v}

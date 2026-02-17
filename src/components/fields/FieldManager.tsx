@@ -108,7 +108,7 @@ export function FieldManager() {
                   onDelete={() => deleteField(field.id)}
                 />
                 {openFieldIds.includes(field.id) && (field.type === 'select' || field.type === 'multi_select') && (
-                  <div className="ml-6 mt-1">
+                  <div className="ml-6 mt-1 min-w-0 overflow-hidden">
                     <FieldOptionEditor field={field} onUpdateOptions={updateFieldOptions} />
                   </div>
                 )}

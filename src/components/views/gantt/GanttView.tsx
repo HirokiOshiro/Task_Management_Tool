@@ -850,46 +850,24 @@ export function GanttView() {
                     <div className="absolute left-0.5 top-1/2 -translate-y-1/2 h-3 w-1 rounded-full bg-white/60" />
                   </div>
 
-                  <span className={cn(
-                    "relative z-10 truncate px-3",
-                    task.assignees.length > 0 && barWidth > 60 && "pr-8",
-                  )}>{task.title}</span>
+                  <span className="relative z-10 truncate px-3">{task.title}</span>
 
-                  {/* 担当者イニシャル */}
+                  {/* 担当者イニシャル — 常にバー右外側に配置 */}
                   {task.assignees.length > 0 && (
-                    barWidth > 60 ? (
-                      // バー内右端に配置 — 全員表示（はみ出し分は非表示）
-                      <div
-                        className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 overflow-hidden"
-                        style={{ maxWidth: Math.max(barWidth - 40, 0) }}
-                      >
-                        {task.assignees.map((name, idx) => (
-                          <div
-                            key={idx}
-                            className="flex h-4 w-4 items-center justify-center rounded-full bg-white/30 text-[9px] font-medium text-white flex-shrink-0"
-                            title={name}
-                          >
-                            {name.charAt(0)}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      // バー右外側に配置（短いバー用） — 全員表示
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 pointer-events-none"
-                        style={{ left: barWidth + 4 }}
-                      >
-                        {task.assignees.map((name, idx) => (
-                          <div
-                            key={idx}
-                            className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground flex-shrink-0 border border-border"
-                            title={name}
-                          >
-                            {name.charAt(0)}
-                          </div>
-                        ))}
-                      </div>
-                    )
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 pointer-events-none"
+                      style={{ left: barWidth + 4 }}
+                    >
+                      {task.assignees.map((name, idx) => (
+                        <div
+                          key={idx}
+                          className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground flex-shrink-0 border border-border"
+                          title={name}
+                        >
+                          {name.charAt(0)}
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {/* 右端リサイズハンドル */}

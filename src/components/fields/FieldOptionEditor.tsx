@@ -124,7 +124,7 @@ export function FieldOptionEditor({
               ? t.fieldManager.tagOptionPlaceholder
               : t.fieldManager.optionPlaceholder
           }
-          className="flex-1 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
+          className="flex-1 min-w-0 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
         />
         <button
           onClick={handleAdd}
@@ -183,7 +183,7 @@ function SortableOptionItem({
       <input
         key={`${option.id}-${option.label}`}
         defaultValue={option.label}
-        className="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+        className="flex-1 min-w-0 rounded border border-input bg-background px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-ring"
         onBlur={(e) => {
           const trimmed = e.currentTarget.value.trim()
           if (!trimmed) {
