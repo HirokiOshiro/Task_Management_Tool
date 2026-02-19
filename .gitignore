@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 内部開発ドキュメント（公開リポジトリに含めない）
+docs/security-hardening-log.md
+HANDOVER.md
+CLAUDE.md

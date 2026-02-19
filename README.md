@@ -40,7 +40,6 @@ npm run build
 ## ドキュメント
 
 - アーキテクチャ: [docs/architecture.md](docs/architecture.md)
-- セキュリティ対策ログ: [docs/security-hardening-log.md](docs/security-hardening-log.md)
 
 ## 技術スタック
 
