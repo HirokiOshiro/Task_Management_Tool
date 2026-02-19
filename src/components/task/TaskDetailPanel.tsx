@@ -453,7 +453,6 @@ function SortablePersonRow({ id, onRemove }: { id: string; onRemove: () => void 
       <span className="flex-1 truncate">{id}</span>
       <button
         onClick={onRemove}
-        onMouseDown={(e) => e.stopPropagation()}
         className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
       >
         <Trash2 size={12} />

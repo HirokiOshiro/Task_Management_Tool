@@ -123,6 +123,8 @@ export const ja = {
   // ── Filter Bar ──
   filter: {
     filter: 'フィルタ',
+    activeOnly: '未着手・進行中',
+    activeOnlyTitle: '未着手・進行中のみ表示',
     excludeDone: '完了以外',
     showAll: '全て',
     hideDoneTitle: '完了タスクを非表示',
@@ -408,6 +410,8 @@ export type Locale = {
   }
   filter: {
     filter: string
+    activeOnly: string
+    activeOnlyTitle: string
     excludeDone: string
     showAll: string
     hideDoneTitle: string

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 import type { TaskDataSet, FieldDefinition, Task } from '@/types/task'
-import { createDefaultFields } from '@/types/task'
+import { createDefaultFields, SYSTEM_FIELD_IDS } from '@/types/task'
 import { generateId } from '@/lib/id'
 import type { ViewConfig } from '@/types/view'
 import { isSafeObjectKey, sanitizeColor, validateTaskDataSet } from '@/lib/sanitize'
@@ -397,6 +397,7 @@ export function parseImportFile(
 
   // タスク構築
   const tasks: Task[] = []
+  const today = new Date().toISOString().split('T')[0]
   for (const row of dataRows) {
     if (!row || (row as unknown[]).every((c) => c == null || c === '')) continue
     const fieldValues: Record<string, unknown> = {}
@@ -404,6 +405,16 @@ export function parseImportFile(
       const field = headerToField.get(colIdx)
       if (!field) continue
       fieldValues[field.id] = parseValue((row as unknown[])[colIdx], field)
+    }
+    // 未入力フィールドのデフォルト値を補完
+    if (fieldValues[SYSTEM_FIELD_IDS.STATUS] === undefined) {
+      fieldValues[SYSTEM_FIELD_IDS.STATUS] = 'not_started'
+    }
+    if (fieldValues[SYSTEM_FIELD_IDS.START_DATE] === undefined) {
+      fieldValues[SYSTEM_FIELD_IDS.START_DATE] = today
+    }
+    if (fieldValues[SYSTEM_FIELD_IDS.DUE_DATE] === undefined) {
+      fieldValues[SYSTEM_FIELD_IDS.DUE_DATE] = today
     }
     tasks.push({
       id: generateId(),

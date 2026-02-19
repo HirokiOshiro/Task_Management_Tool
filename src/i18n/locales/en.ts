@@ -125,6 +125,8 @@ export const en: Locale = {
   // ── Filter Bar ──
   filter: {
     filter: 'Filter',
+    activeOnly: 'Active',
+    activeOnlyTitle: 'Show active tasks only',
     excludeDone: 'Exclude Done',
     showAll: 'All',
     hideDoneTitle: 'Hide done tasks',

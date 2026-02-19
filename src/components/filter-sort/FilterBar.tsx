@@ -78,13 +78,29 @@ export function FilterBar() {
   }
 
   // ── ステータスクイックフィルター ──
-  const hasHideDoneFilter = filters.some(
-    (f) => f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done'
-  )
+  const QUICK_ACTIVE_ONLY_NO_DONE = 'quick-active-no-done'
+  const QUICK_ACTIVE_ONLY_NO_HOLD = 'quick-active-no-hold'
+
+  const hasActiveOnlyFilter =
+    filters.some((f) => f.id === QUICK_ACTIVE_ONLY_NO_DONE) &&
+    filters.some((f) => f.id === QUICK_ACTIVE_ONLY_NO_HOLD)
+
+  const hasHideDoneFilter = filters.some((f) => f.id === 'default-hide-done')
+
+  const setActiveOnly = () => {
+    const otherFilters = filters.filter(
+      (f) => f.id !== 'default-hide-done' && f.id !== QUICK_ACTIVE_ONLY_NO_DONE && f.id !== QUICK_ACTIVE_ONLY_NO_HOLD
+    )
+    setFilters([
+      ...otherFilters,
+      { id: QUICK_ACTIVE_ONLY_NO_DONE, fieldId: SYSTEM_FIELD_IDS.STATUS, operator: 'not_equals' as FilterOperator, value: 'done' },
+      { id: QUICK_ACTIVE_ONLY_NO_HOLD, fieldId: SYSTEM_FIELD_IDS.STATUS, operator: 'not_equals' as FilterOperator, value: 'on_hold' },
+    ])
+  }
 
   const setHideDone = () => {
     const otherFilters = filters.filter(
-      (f) => !(f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done')
+      (f) => f.id !== 'default-hide-done' && f.id !== QUICK_ACTIVE_ONLY_NO_DONE && f.id !== QUICK_ACTIVE_ONLY_NO_HOLD
     )
     setFilters([
       ...otherFilters,
@@ -94,7 +110,7 @@ export function FilterBar() {
 
   const setShowAll = () => {
     setFilters(filters.filter(
-      (f) => !(f.fieldId === SYSTEM_FIELD_IDS.STATUS && f.operator === 'not_equals' && f.value === 'done')
+      (f) => f.id !== 'default-hide-done' && f.id !== QUICK_ACTIVE_ONLY_NO_DONE && f.id !== QUICK_ACTIVE_ONLY_NO_HOLD
     ))
   }
 
@@ -161,23 +177,35 @@ export function FilterBar() {
       {/* ステータスフィルター */}
       <div className="flex items-center rounded-md border border-border bg-background text-xs">
         <button
-          onClick={setHideDone}
+          onClick={setActiveOnly}
           className={cn(
             'flex items-center gap-1 rounded-l-md px-2 py-1 transition-colors',
+            hasActiveOnlyFilter
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+          title={t.filter.activeOnlyTitle}
+        >
+          <ListFilter size={13} />
+          {t.filter.activeOnly}
+        </button>
+        <button
+          onClick={setHideDone}
+          className={cn(
+            'flex items-center gap-1 px-2 py-1 transition-colors border-l border-border',
             hasHideDoneFilter
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-accent hover:text-foreground'
           )}
           title={t.filter.hideDoneTitle}
         >
-          <ListFilter size={13} />
           {t.filter.excludeDone}
         </button>
         <button
           onClick={setShowAll}
           className={cn(
             'flex items-center gap-1 rounded-r-md px-2 py-1 transition-colors border-l border-border',
-            !hasHideDoneFilter
+            !hasHideDoneFilter && !hasActiveOnlyFilter
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:bg-accent hover:text-foreground'
           )}
