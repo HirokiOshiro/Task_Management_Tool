@@ -223,6 +223,8 @@ export const en: Locale = {
     noFileConnected: 'No file connected',
     openFile: 'Open File',
     save: 'Save',
+    saveAs: 'Save As...',
+    saveAsFormat: 'Format',
     saveJson: 'Save as JSON',
     saveAsJson: 'Save as JSON (New)',
     saveExcel: 'Save as Excel',

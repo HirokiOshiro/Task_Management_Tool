@@ -9,7 +9,7 @@ import { writeExcel } from '@/lib/excel/writer'
 import { parseImportFile } from '@/lib/excel/parser'
 import { fileSave, fileOpen } from 'browser-fs-access'
 import * as XLSX from 'xlsx'
-import { FolderOpen, Database, FileSpreadsheet, FileJson, Loader2, Save, Upload, Download, X } from 'lucide-react'
+import { FolderOpen, Database, FileSpreadsheet, FileJson, Loader2, Save, SaveAll, Upload, Download, X } from 'lucide-react'
 import type { Task, FieldDefinition } from '@/types/task'
 
 export function DataSourceSelector() {
@@ -35,6 +35,7 @@ export function DataSourceSelector() {
     scope: 'all' | 'group'
     groupFieldId?: string
     groupValue?: string
+    saveAs?: boolean
   } | null>(null)
 
   // ファイルが開かれているか（上書き保存可能か）
@@ -98,6 +99,15 @@ export function DataSourceSelector() {
     })
   }, [])
 
+  // 「名前を付けて保存」ダイアログを開く
+  const handleOpenSaveAsDialog = useCallback(() => {
+    setExportOptions({
+      format: 'json',
+      scope: 'all',
+      saveAs: true,
+    })
+  }, [])
+
   // フィルタリングされたdataSetを生成
   const getFilteredDataSet = useCallback(() => {
     const data = getDataSet()
@@ -136,8 +146,9 @@ export function DataSourceSelector() {
       const json = JSON.stringify(data, null, 2)
       const blob = new Blob([json], { type: 'application/json' })
 
-      // 同じ形式（.json）で開いている場合のみ上書き候補にする
+      // 同じ形式（.json）で開いている場合のみ上書き候補にする（saveAsモードは常に新規）
       const existingHandle =
+        !exportOptions.saveAs &&
         hasOpenFile && connection?.name.endsWith('.json')
           ? connection.fileHandle ?? undefined
           : undefined
@@ -197,8 +208,9 @@ export function DataSourceSelector() {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       })
 
-      // 同じ形式（.xlsx）で開いている場合のみ上書き候補にする
+      // 同じ形式（.xlsx）で開いている場合のみ上書き候補にする（saveAsモードは常に新規）
       const existingHandle =
+        !exportOptions.saveAs &&
         hasOpenFile && connection?.name.endsWith('.xlsx')
           ? connection.fileHandle ?? undefined
           : undefined
@@ -330,6 +342,16 @@ export function DataSourceSelector() {
           {isDirty && <span className="ml-auto h-2 w-2 rounded-full bg-amber-500" />}
         </button>
       )}
+
+      {/* 名前を付けて保存 */}
+      <button
+        onClick={handleOpenSaveAsDialog}
+        disabled={saving}
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-accent/50 disabled:opacity-50"
+      >
+        <SaveAll size={16} />
+        {t.data.saveAs}
+      </button>
 
       {/* 区切り線（ファイル接続中のみ） */}
       {hasOpenFile && <div className="border-t border-border my-1" />}
@@ -472,7 +494,9 @@ export function DataSourceSelector() {
             {/* ヘッダー */}
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">
-                {exportOptions.format === 'json' ? 'JSON' : 'Excel'}エクスポートオプション
+                {exportOptions.saveAs
+                  ? t.data.saveAs
+                  : `${exportOptions.format === 'json' ? 'JSON' : 'Excel'}エクスポートオプション`}
               </h3>
               <button
                 onClick={() => setExportOptions(null)}
@@ -481,6 +505,35 @@ export function DataSourceSelector() {
                 <X size={16} />
               </button>
             </div>
+
+            {/* 保存形式セレクター（名前を付けて保存モードのみ） */}
+            {exportOptions.saveAs && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t.data.saveAsFormat}</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setExportOptions({ ...exportOptions, format: 'json' })}
+                    className={`flex-1 py-1.5 text-sm rounded border flex items-center justify-center gap-1 ${
+                      exportOptions.format === 'json'
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-border hover:bg-accent/50'
+                    }`}
+                  >
+                    <FileJson size={14} />JSON
+                  </button>
+                  <button
+                    onClick={() => setExportOptions({ ...exportOptions, format: 'excel' })}
+                    className={`flex-1 py-1.5 text-sm rounded border flex items-center justify-center gap-1 ${
+                      exportOptions.format === 'excel'
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-border hover:bg-accent/50'
+                    }`}
+                  >
+                    <FileSpreadsheet size={14} />Excel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* エクスポート範囲選択 */}
             <div className="space-y-2">

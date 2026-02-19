@@ -221,6 +221,8 @@ export const ja = {
     noFileConnected: 'ファイルが接続されていません',
     openFile: 'ファイルを開く',
     save: '上書き保存',
+    saveAs: '名前を付けて保存',
+    saveAsFormat: '保存形式',
     saveJson: 'JSONで保存',
     saveAsJson: '別名でJSON保存',
     saveExcel: 'Excelで保存',
@@ -478,6 +480,8 @@ export type Locale = {
     noFileConnected: string
     openFile: string
     save: string
+    saveAs: string
+    saveAsFormat: string
     saveJson: string
     saveAsJson: string
     saveExcel: string
