@@ -4,7 +4,7 @@ import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote, SlidersHorizontal, GripVertical } from 'lucide-react'
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
@@ -294,10 +294,22 @@ function DetailEditor({
   onEditOptions: () => void
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+  const selectRef = useRef<HTMLSelectElement>(null)
   const { t } = useI18n()
 
   useEffect(() => {
     inputRef.current?.focus()
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = selectRef.current
+    if (!el) return
+    el.focus()
+    try {
+      el.showPicker()
+    } catch {
+      // Safari など showPicker() 未対応ブラウザではフォールバック（2クリック動作）
+    }
   }, [])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -387,12 +399,11 @@ function DetailEditor({
       return (
         <div className="flex items-center gap-1">
           <select
+            ref={selectRef}
             defaultValue={value != null ? String(value) : ''}
             className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             onChange={(e) => onSave(e.target.value || undefined)}
             onBlur={() => onCancel()}
-            onFocus={(e) => e.currentTarget.click()}
-            autoFocus
           >
             <option value="">-</option>
             {field.options?.map((opt) => (
