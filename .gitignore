@@ -27,3 +27,6 @@ dist-ssr
 docs/security-hardening-log.md
 HANDOVER.md
 CLAUDE.md
+
+# Claude Code ローカル設定
+.claude/settings.local.json
