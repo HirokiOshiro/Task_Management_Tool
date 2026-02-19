@@ -391,6 +391,7 @@ function DetailEditor({
             className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             onChange={(e) => onSave(e.target.value || undefined)}
             onBlur={() => onCancel()}
+            onFocus={(e) => e.currentTarget.click()}
             autoFocus
           >
             <option value="">-</option>
