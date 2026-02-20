@@ -89,6 +89,7 @@ interface GanttTask {
 type DisplayRow =
   | { type: 'group-header'; groupId: string; label: string; color: string; taskCount: number; collapsed: boolean }
   | { type: 'task'; task: GanttTask }
+  | { type: 'inline-create' }
 
 /** インラインタスク作成状態 */
 interface InlineCreateState {
@@ -211,10 +212,12 @@ export function GanttView() {
     return result
   }, [groupConfig, groupField, sortedGanttTasks, t])
 
-  // 表示行リスト（グループヘッダー + タスク行）
+  // 表示行リスト（グループヘッダー + タスク行 + インライン作成行）
   const displayRows = useMemo((): DisplayRow[] => {
     if (!groupedData) {
-      return sortedGanttTasks.map((task) => ({ type: 'task' as const, task }))
+      const rows: DisplayRow[] = sortedGanttTasks.map((task) => ({ type: 'task' as const, task }))
+      if (inlineCreate) rows.push({ type: 'inline-create' })
+      return rows
     }
     const rows: DisplayRow[] = []
     for (const group of groupedData) {
@@ -230,10 +233,18 @@ export function GanttView() {
         for (const task of group.tasks) {
           rows.push({ type: 'task', task })
         }
+        // このグループへのインライン作成行をグループ最下段に挿入
+        if (inlineCreate?.categoryId === group.id) {
+          rows.push({ type: 'inline-create' })
+        }
       }
     }
+    // カテゴリーなし（グローバル作成）の場合は末尾に追加
+    if (inlineCreate && !inlineCreate.categoryId) {
+      rows.push({ type: 'inline-create' })
+    }
     return rows
-  }, [groupedData, sortedGanttTasks])
+  }, [groupedData, sortedGanttTasks, inlineCreate])
 
   const toggleGroupCollapse = useCallback(
     (groupId: string) => {
@@ -629,10 +640,16 @@ export function GanttView() {
 
   /** グループヘッダーの + ボタン → カテゴリー指定でインラインタスク作成 */
   const handleAddTaskInGroup = useCallback((categoryId: string) => {
+    // 折り畳まれているグループは自動展開する
+    if (groupConfig && groupConfig.collapsed?.[categoryId]) {
+      updateView(activeView.id, {
+        group: { ...groupConfig, collapsed: { ...groupConfig.collapsed, [categoryId]: false } },
+      })
+    }
     const today = startOfDay(new Date())
     setInlineCreate({ startDate: today, endDate: today, categoryId })
     setInlineTitle('')
-  }, [])
+  }, [groupConfig, activeView.id, updateView])
 
   /** インライン入力が表示されたらフォーカス */
   useEffect(() => {
@@ -799,6 +816,70 @@ export function GanttView() {
             )
           }
 
+          if (row.type === 'inline-create') {
+            return (
+              <div key="inline-create" className="flex border-b border-border bg-primary/5" style={{ height: ROW_HEIGHT }}>
+                {/* タスク名入力 */}
+                <div
+                  className="sticky left-0 z-20 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3"
+                  style={{ height: ROW_HEIGHT }}
+                >
+                  <div className="flex-shrink-0 mr-2 w-5" />
+                  <input
+                    ref={inlineInputRef}
+                    type="text"
+                    value={inlineTitle}
+                    onChange={(e) => setInlineTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleInlineCreateConfirm()
+                      } else if (e.key === 'Escape') {
+                        handleInlineCreateCancel()
+                      }
+                    }}
+                    onBlur={() => {
+                      // 少し遅延して blur 時に確定（空なら消える）
+                      setTimeout(() => handleInlineCreateConfirm(), 150)
+                    }}
+                    placeholder={t.gantt.taskNamePlaceholder}
+                    className="flex-1 bg-transparent text-sm outline-none border-b-2 border-primary/50 py-0.5 placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                {/* プレビューバー */}
+                <div className="relative flex-1">
+                  {todayOffset >= 0 && todayOffset < totalDays && (
+                    <div
+                      className="absolute top-0 h-full w-px bg-primary/50"
+                      style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
+                    />
+                  )}
+                  {inlineCreate && (() => {
+                    const previewStart = differenceInDays(inlineCreate.startDate, minDate)
+                    const previewDuration = differenceInDays(inlineCreate.endDate, inlineCreate.startDate) + 1
+                    const previewWidth = Math.max(previewDuration * dayWidth - 4, 20)
+                    return (
+                      <div
+                        className="absolute top-1.5 flex items-center rounded-md text-xs text-white/80 shadow-sm border-2 border-dashed border-primary/60"
+                        style={{
+                          left: previewStart * dayWidth + 2,
+                          width: previewWidth,
+                          height: ROW_HEIGHT - 12,
+                          backgroundColor: 'var(--color-primary)',
+                          opacity: 0.4,
+                        }}
+                      >
+                        <span className="relative z-10 truncate px-3 text-primary-foreground">
+                          {format(inlineCreate.startDate, 'M/d')} 〜 {format(inlineCreate.endDate, 'M/d')}
+                        </span>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            )
+          }
+
           const task = row.task
           const { start, end } = getDisplayDates(task)
           const startOffset = differenceInDays(start, minDate)
@@ -938,70 +1019,6 @@ export function GanttView() {
             </div>
           )
         })}
-
-        {/* インラインタスク作成行 */}
-        {inlineCreate && (
-          <div className="flex border-b border-border bg-primary/5" style={{ height: ROW_HEIGHT }}>
-            {/* タスク名入力 */}
-            <div
-              className="sticky left-0 z-20 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3"
-              style={{ height: ROW_HEIGHT }}
-            >
-              <div className="flex-shrink-0 mr-2 w-5" />
-              <input
-                ref={inlineInputRef}
-                type="text"
-                value={inlineTitle}
-                onChange={(e) => setInlineTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleInlineCreateConfirm()
-                  } else if (e.key === 'Escape') {
-                    handleInlineCreateCancel()
-                  }
-                }}
-                onBlur={() => {
-                  // 少し遅延して blur 時に確定（空なら消える）
-                  setTimeout(() => handleInlineCreateConfirm(), 150)
-                }}
-                placeholder={t.gantt.taskNamePlaceholder}
-                className="flex-1 bg-transparent text-sm outline-none border-b-2 border-primary/50 py-0.5 placeholder:text-muted-foreground/50"
-              />
-            </div>
-            {/* プレビューバー */}
-            <div className="relative flex-1">
-              {/* 今日線 */}
-              {todayOffset >= 0 && todayOffset < totalDays && (
-                <div
-                  className="absolute top-0 h-full w-px bg-primary/50"
-                  style={{ left: todayOffset * dayWidth + dayWidth / 2 }}
-                />
-              )}
-              {(() => {
-                const previewStart = differenceInDays(inlineCreate.startDate, minDate)
-                const previewDuration = differenceInDays(inlineCreate.endDate, inlineCreate.startDate) + 1
-                const previewWidth = Math.max(previewDuration * dayWidth - 4, 20)
-                return (
-                  <div
-                    className="absolute top-1.5 flex items-center rounded-md text-xs text-white/80 shadow-sm border-2 border-dashed border-primary/60"
-                    style={{
-                      left: previewStart * dayWidth + 2,
-                      width: previewWidth,
-                      height: ROW_HEIGHT - 12,
-                      backgroundColor: 'var(--color-primary)',
-                      opacity: 0.4,
-                    }}
-                  >
-                    <span className="relative z-10 truncate px-3 text-primary-foreground">
-                      {format(inlineCreate.startDate, 'M/d')} 〜 {format(inlineCreate.endDate, 'M/d')}
-                    </span>
-                  </div>
-                )
-              })()}
-            </div>
-          </div>
-        )}
 
         {/* ＋ 新規タスク追加行 */}
         {!inlineCreate && (
