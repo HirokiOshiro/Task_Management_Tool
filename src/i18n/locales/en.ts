@@ -287,7 +287,7 @@ export const en: Locale = {
         switchTabs: 'Switch views using the tabs in the header.',
         table: { name: 'Table', desc: 'List tasks like a spreadsheet. Click cells to edit directly, or click a row to open the detail panel.' },
         kanban: { name: 'Kanban', desc: 'Display cards by status. Drag & drop to change status. You can change the grouping field in view settings.' },
-        gantt: { name: 'Gantt Chart', desc: 'Display task start-to-due dates as bars. Drag bars to move schedules, drag edges to adjust duration. Click empty areas to create new tasks, or drag-select multiple tasks for batch moving. Use the "Today" button to scroll to the current date.' },
+        gantt: { name: 'Gantt Chart', desc: 'Display task start-to-due dates as bars. Drag bars to move schedules, drag edges to adjust duration. Double-click empty areas to create new tasks, or drag-select multiple tasks for batch moving. When grouped, click the "+" button on a group header to create a task with that category. Use the "Today" button to scroll to the current date, and switch between monthly and 2-week views. Arrows are shown between tasks that have dependency relationships.' },
         calendar: { name: 'Calendar', desc: 'Display tasks with due dates on a monthly calendar. Click a task to view details.' },
       },
       filterSort: {
