@@ -32,6 +32,27 @@ const HANDLE_WIDTH = 8
 const MONTH_HEADER_HEIGHT = 24
 const TASK_NAME_WIDTH = 240
 
+/** 担当者イニシャル用の色セット（背景色・テキスト色） */
+const ASSIGNEE_COLORS = [
+  { bg: '#dbeafe', text: '#1e40af' }, // blue
+  { bg: '#dcfce7', text: '#166534' }, // green
+  { bg: '#fce7f3', text: '#9d174d' }, // pink
+  { bg: '#f3e8ff', text: '#6b21a8' }, // purple
+  { bg: '#ffedd5', text: '#9a3412' }, // orange
+  { bg: '#cffafe', text: '#155e75' }, // cyan
+  { bg: '#e0e7ff', text: '#3730a3' }, // indigo
+  { bg: '#fef9c3', text: '#854d0e' }, // yellow
+]
+
+/** 担当者名のハッシュから固定色を返す */
+function getAssigneeColor(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  }
+  return ASSIGNEE_COLORS[hash % ASSIGNEE_COLORS.length]
+}
+
 type DragMode = 'move' | 'resize-start' | 'resize-end'
 
 interface DragState {
@@ -75,6 +96,8 @@ interface InlineCreateState {
   startDate: Date
   /** 開始日と同日のデフォルト終了日 */
   endDate: Date
+  /** グループヘッダーから作成する場合の業務カテゴリーID */
+  categoryId?: string
 }
 
 export function GanttView() {
@@ -583,6 +606,7 @@ export function GanttView() {
       [SYSTEM_FIELD_IDS.STATUS]: 'not_started',
       [SYSTEM_FIELD_IDS.START_DATE]: format(inlineCreate.startDate, 'yyyy-MM-dd'),
       [SYSTEM_FIELD_IDS.DUE_DATE]: format(inlineCreate.endDate, 'yyyy-MM-dd'),
+      ...(inlineCreate.categoryId && { [SYSTEM_FIELD_IDS.CATEGORY]: inlineCreate.categoryId }),
     })
 
     setInlineCreate(null)
@@ -600,6 +624,13 @@ export function GanttView() {
   const handleAddTaskRow = useCallback(() => {
     const today = startOfDay(new Date())
     setInlineCreate({ startDate: today, endDate: today })
+    setInlineTitle('')
+  }, [])
+
+  /** グループヘッダーの + ボタン → カテゴリー指定でインラインタスク作成 */
+  const handleAddTaskInGroup = useCallback((categoryId: string) => {
+    const today = startOfDay(new Date())
+    setInlineCreate({ startDate: today, endDate: today, categoryId })
     setInlineTitle('')
   }, [])
 
@@ -733,7 +764,7 @@ export function GanttView() {
                 style={{ height: ROW_HEIGHT }}
               >
                 <div
-                  className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-muted/30 px-2 cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                  className="sticky left-0 z-20 flex w-60 flex-shrink-0 items-center border-r border-border bg-muted/30 px-2 cursor-pointer select-none hover:bg-muted/50 transition-colors group"
                   style={{ height: ROW_HEIGHT }}
                   onClick={() => toggleGroupCollapse(row.groupId)}
                 >
@@ -748,6 +779,13 @@ export function GanttView() {
                   />
                   <span className="text-xs font-medium truncate">{row.label}</span>
                   <span className="ml-1.5 text-[10px] text-muted-foreground flex-shrink-0">({row.taskCount})</span>
+                  <button
+                    className="ml-auto mr-0.5 p-1 rounded hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); handleAddTaskInGroup(row.groupId) }}
+                    title={t.common.newTask}
+                  >
+                    <Plus size={12} className="text-muted-foreground" />
+                  </button>
                 </div>
                 <div className="relative flex-1">
                   {todayOffset >= 0 && todayOffset < totalDays && (
@@ -784,7 +822,7 @@ export function GanttView() {
             >
               {/* タスク名 */}
               <div
-                className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3 text-sm group/name"
+                className="sticky left-0 z-20 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3 text-sm group/name"
                 style={{ height: ROW_HEIGHT }}
               >
                 {/* 完了チェックボックス */}
@@ -858,15 +896,19 @@ export function GanttView() {
                       className="absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 pointer-events-none"
                       style={{ left: barWidth + 4 }}
                     >
-                      {task.assignees.map((name, idx) => (
-                        <div
-                          key={idx}
-                          className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground flex-shrink-0 border border-border"
-                          title={name}
-                        >
-                          {name.charAt(0)}
-                        </div>
-                      ))}
+                      {task.assignees.map((name, idx) => {
+                        const color = getAssigneeColor(name)
+                        return (
+                          <div
+                            key={idx}
+                            className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-medium flex-shrink-0 border"
+                            style={{ backgroundColor: color.bg, color: color.text, borderColor: color.bg }}
+                            title={name}
+                          >
+                            {name.charAt(0)}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
 
@@ -902,7 +944,7 @@ export function GanttView() {
           <div className="flex border-b border-border bg-primary/5" style={{ height: ROW_HEIGHT }}>
             {/* タスク名入力 */}
             <div
-              className="sticky left-0 z-10 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3"
+              className="sticky left-0 z-20 flex w-60 flex-shrink-0 items-center border-r border-border bg-background px-3"
               style={{ height: ROW_HEIGHT }}
             >
               <div className="flex-shrink-0 mr-2 w-5" />
