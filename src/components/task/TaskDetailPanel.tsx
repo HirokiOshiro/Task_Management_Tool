@@ -3,7 +3,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
-import { X, Trash2, StickyNote, SlidersHorizontal, GripVertical } from 'lucide-react'
+import { X, Trash2, StickyNote, SlidersHorizontal, GripVertical, CheckSquare } from 'lucide-react'
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
@@ -646,7 +646,42 @@ function MemoSection({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { t } = useI18n()
 
-  // value が外部から変わったら draft をリセット
+  // 最新の値を refs に保持（クロージャのキャプチャを避ける）
+  // prevTaskIdRef はレンダー中に更新しない（useEffect 内でのみ更新）
+  const prevTaskIdRef = useRef(taskId)
+  const draftRef = useRef(draft)
+  const editingRef = useRef(editing)
+  const onUpdateRef = useRef(onUpdate)
+  draftRef.current = draft
+  editingRef.current = editing
+  onUpdateRef.current = onUpdate
+
+  // アンマウント時: 編集中なら自動保存
+  useEffect(() => {
+    return () => {
+      if (editingRef.current) {
+        const trimmed = draftRef.current.trim()
+        onUpdateRef.current(prevTaskIdRef.current, SYSTEM_FIELD_IDS.NOTES, trimmed || undefined)
+      }
+    }
+  }, [])
+
+  // taskId 変更時: 前のタスクの下書きを保存してリセット
+  useEffect(() => {
+    const prevTaskId = prevTaskIdRef.current
+    if (prevTaskId !== taskId) {
+      if (editingRef.current) {
+        const trimmed = draftRef.current.trim()
+        onUpdateRef.current(prevTaskId, SYSTEM_FIELD_IDS.NOTES, trimmed || undefined)
+      }
+      setEditing(false)
+      setDraft(value ?? '')
+      prevTaskIdRef.current = taskId
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId])
+
+  // value が外部から変わったら draft をリセット（同一タスク内の外部更新）
   useEffect(() => {
     if (!editing) {
       setDraft(value ?? '')
@@ -666,6 +701,21 @@ function MemoSection({
     const trimmed = draft.trim()
     onUpdate(taskId, SYSTEM_FIELD_IDS.NOTES, trimmed || undefined)
     setEditing(false)
+  }
+
+  // カーソル行の先頭にチェックボックスを挿入
+  const insertCheckbox = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const { selectionStart, value } = textarea
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+    const prefix = '- [ ] '
+    const newValue = value.substring(0, lineStart) + prefix + value.substring(lineStart)
+    setDraft(newValue)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.selectionStart = textarea.selectionEnd = lineStart + prefix.length
+    }, 0)
   }
 
   // キーボードショートカット処理
@@ -717,6 +767,33 @@ function MemoSection({
       const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
       const currentLine = value.substring(lineStart, selectionStart)
 
+      // チェックボックスパターンを優先検出（ - [ ]  / - [x] ）
+      const checkboxMatch = currentLine.match(/^(\s*)([-*+]) \[[ x]\] /)
+      if (checkboxMatch) {
+        e.preventDefault()
+        const indent = checkboxMatch[1]
+        const bullet = checkboxMatch[2]
+        const lineContent = currentLine.replace(/^(\s*)([-*+]) \[[ x]\] /, '').trim()
+
+        // 内容が空（マーカーのみ）なら箇条書き終了
+        if (!lineContent) {
+          const newValue = value.substring(0, lineStart) + value.substring(selectionStart)
+          setDraft(newValue)
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = lineStart
+          }, 0)
+          return
+        }
+
+        const continuation = `\n${indent}${bullet} [ ] `
+        const newValue = value.substring(0, selectionStart) + continuation + value.substring(selectionEnd)
+        setDraft(newValue)
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = selectionStart + continuation.length
+        }, 0)
+        return
+      }
+
       // 箇条書きパターンを検出
       const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.)\s/)
       if (bulletMatch) {
@@ -756,13 +833,24 @@ function MemoSection({
       </div>
       {editing ? (
         <div>
+          {/* ツールバー */}
+          <div className="flex items-center gap-1 mb-1">
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); insertCheckbox() }}
+              className="rounded p-1 text-muted-foreground hover:bg-accent transition-colors"
+              title="チェックボックスリスト (- [ ] )"
+            >
+              <CheckSquare size={13} />
+            </button>
+          </div>
           <textarea
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}
             className="w-full rounded border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-y font-mono"
-            placeholder="Markdown記法が使えます&#10;&#10;- リスト項目1&#10;- リスト項目2&#10;&#10;**太字** _斜体_ `コード`&#10;&#10;Tab: インデント / Shift+Tab: インデント解除"
+            placeholder="Markdown記法が使えます&#10;&#10;- リスト項目&#10;- [ ] 未完了タスク&#10;- [x] 完了タスク&#10;&#10;**太字** _斜体_ `コード`&#10;&#10;Tab: インデント / Shift+Tab: インデント解除"
             onKeyDown={handleKeyDown}
           />
           <div className="flex justify-end gap-2 mt-2">
