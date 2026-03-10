@@ -816,7 +816,7 @@ export function GanttView() {
                     <Plus size={12} className="text-muted-foreground" />
                   </button>
                 </div>
-                <div className="relative flex-1">
+                <div className="relative flex-1 overflow-hidden">
                   {todayOffset >= 0 && todayOffset < totalDays && (
                     <div
                       className="absolute top-0 h-full w-px bg-primary/50"
@@ -859,7 +859,7 @@ export function GanttView() {
                   />
                 </div>
                 {/* プレビューバー */}
-                <div className="relative flex-1">
+                <div className="relative flex-1 overflow-hidden">
                   {todayOffset >= 0 && todayOffset < totalDays && (
                     <div
                       className="absolute top-0 h-full w-px bg-primary/50"
@@ -941,7 +941,7 @@ export function GanttView() {
                 </div>
               </div>
               {/* ガントバー領域 */}
-              <div className="relative flex-1">
+              <div className="relative flex-1 overflow-hidden">
                 {/* 今日線 */}
                 {todayOffset >= 0 && todayOffset < totalDays && (
                   <div
@@ -1047,7 +1047,7 @@ export function GanttView() {
                 {t.common.newTask}
               </button>
             </div>
-            <div className="relative flex-1">
+            <div className="relative flex-1 overflow-hidden">
               {/* 今日線 */}
               {todayOffset >= 0 && todayOffset < totalDays && (
                 <div
@@ -1062,7 +1062,7 @@ export function GanttView() {
         {/* 依存関係矢印レイヤー */}
         {dependencyEdges.length > 0 && (
           <svg
-            className="absolute top-0 left-0 pointer-events-none"
+            className="absolute top-0 left-0 pointer-events-none z-10"
             style={{
               width: TASK_NAME_WIDTH + totalDays * dayWidth,
               height: displayRows.length * ROW_HEIGHT,
