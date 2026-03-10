@@ -19,6 +19,7 @@ export type FilterOperator =
   | 'after'
   | 'in'
   | 'not_in'
+  | 'date_range_overlaps'
 
 export interface FilterRule {
   id: string

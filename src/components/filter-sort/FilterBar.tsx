@@ -14,7 +14,6 @@ import {
   startOfMonth,
   endOfMonth,
   addMonths,
-  addDays,
   format as formatDate,
 } from 'date-fns'
 
@@ -119,12 +118,10 @@ export function FilterBar() {
   const activeDateRange = (() => {
     const dateFilter = filters.find((f) => f.id.startsWith(QUICK_DATE_PREFIX))
     if (!dateFilter) return null
-    // 'quick-date-this-week-start' → 'this-week'
-    const id = dateFilter.id.replace(QUICK_DATE_PREFIX, '')
-    return id.replace(/-start$/, '').replace(/-end$/, '')
+    return dateFilter.id.replace(QUICK_DATE_PREFIX, '')
   })()
 
-  const setDateRangeFilter = (rangeId: string, afterDate: Date, beforeDate: Date) => {
+  const setDateRangeFilter = (rangeId: string, startDate: Date, endDate: Date) => {
     // 同じフィルターのトグル（再クリックでクリア）
     if (activeDateRange === rangeId) {
       clearDateRangeFilters()
@@ -134,20 +131,17 @@ export function FilterBar() {
     // 既存の日付範囲フィルターを除去し、他のフィルターは維持
     const otherFilters = filters.filter((f) => !f.id.startsWith(QUICK_DATE_PREFIX))
 
-    // after は > (exclusive) なので1日前、before は < (exclusive) なので1日後を指定
+    // 期間重複判定: タスクの開始日〜期限が指定範囲と1日でも重なれば表示
     setFilters([
       ...otherFilters,
       {
-        id: `${QUICK_DATE_PREFIX}${rangeId}-start`,
+        id: `${QUICK_DATE_PREFIX}${rangeId}`,
         fieldId: SYSTEM_FIELD_IDS.DUE_DATE,
-        operator: 'after' as FilterOperator,
-        value: formatDate(addDays(afterDate, -1), 'yyyy-MM-dd'),
-      },
-      {
-        id: `${QUICK_DATE_PREFIX}${rangeId}-end`,
-        fieldId: SYSTEM_FIELD_IDS.DUE_DATE,
-        operator: 'before' as FilterOperator,
-        value: formatDate(addDays(beforeDate, 1), 'yyyy-MM-dd'),
+        operator: 'date_range_overlaps' as FilterOperator,
+        value: {
+          start: formatDate(startDate, 'yyyy-MM-dd'),
+          end: formatDate(endDate, 'yyyy-MM-dd'),
+        },
       },
     ])
   }

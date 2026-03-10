@@ -118,6 +118,7 @@ export function GanttView() {
   const [inlineTitle, setInlineTitle] = useState('')
   const inlineInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const headerDateRef = useRef<HTMLDivElement>(null)
   const { t, lang } = useI18n()
   const dateFnsLocale = lang === 'ja' ? ja : enUS
   const activeView = useViewStore((s) => s.getActiveView())
@@ -329,6 +330,13 @@ export function GanttView() {
     return headers
   }, [days])
 
+  // ヘッダー日付部分の横スクロールをタスク領域と同期
+  const syncHeaderScroll = useCallback(() => {
+    if (containerRef.current && headerDateRef.current) {
+      headerDateRef.current.scrollLeft = containerRef.current.scrollLeft
+    }
+  }, [])
+
   // 今日の位置にスクロールする関数
   const scrollToToday = useCallback(() => {
     if (containerRef.current && todayOffset >= 0) {
@@ -345,8 +353,9 @@ export function GanttView() {
     if (containerRef.current && todayOffset >= 0) {
       const scrollLeft = todayOffset * dayWidth - containerRef.current.clientWidth / 2 + 240
       containerRef.current.scrollLeft = Math.max(0, scrollLeft)
+      syncHeaderScroll()
     }
-  }, [viewMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewMode, syncHeaderScroll]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** ドラッグ中のタスクの表示位置を計算（一括ドラッグ対応） */
   const getDisplayDates = useCallback(
@@ -542,7 +551,7 @@ export function GanttView() {
             // バーのピクセル位置（タスク名列分オフセット）
             const barLeft = TASK_NAME_WIDTH + barStartOffset * dayWidth + 2
             const barRight = barLeft + Math.max(barDuration * dayWidth - 4, 20)
-            const barTop = HEADER_HEIGHT + rowIndex * ROW_HEIGHT + 6
+            const barTop = rowIndex * ROW_HEIGHT + 6
             const barBottom = barTop + ROW_HEIGHT - 12
 
             // 矩形の重なり判定
@@ -675,63 +684,57 @@ export function GanttView() {
   }
 
   return (
-    <div className="relative h-full">
-      <div className="h-full overflow-auto" ref={containerRef}>
-      <div
-        style={{ width: TASK_NAME_WIDTH + totalDays * dayWidth, minHeight: '100%' }}
-        className={cn('relative', (dragState || marquee) ? 'select-none' : '')}
-        onMouseDown={handleMarqueeStart}
-        onDoubleClick={handleChartDoubleClick}
-      >
-        {/* ヘッダー */}
-        <div className="sticky top-0 z-20 flex border-b border-border bg-background">
-          {/* タスク名カラム（2段構造: 上段ボタン + 下段ラベル） */}
-          <div className="sticky left-0 z-30 w-60 flex-shrink-0 border-r border-border bg-background flex flex-col justify-between">
-            {/* 上段: モード切替 + 今日ボタン */}
-            <div className="flex items-center gap-1.5 px-2 pt-1.5">
-              <div className="flex items-center rounded bg-muted p-0.5">
-                <button
-                  onClick={() => setViewMode('month')}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
-                    viewMode === 'month'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t.gantt.monthView}
-                </button>
-                <button
-                  onClick={() => setViewMode('2weeks')}
-                  className={cn(
-                    "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
-                    viewMode === '2weeks'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t.gantt.twoWeeksView}
-                </button>
-              </div>
-              {todayOffset >= 0 && (
-                <button
-                  onClick={scrollToToday}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
-                  title={t.gantt.scrollToToday}
-                >
-                  <CalendarDays size={12} />
-                  {t.common.today}
-                </button>
-              )}
+    <div className="relative h-full flex flex-col">
+      {/* ヘッダー（固定、スクロールしない） */}
+      <div className="flex-shrink-0 flex border-b border-border bg-background">
+        {/* タスク名カラム（2段構造: 上段ボタン + 下段ラベル） */}
+        <div className="w-60 flex-shrink-0 border-r border-border bg-background flex flex-col justify-between">
+          {/* 上段: モード切替 + 今日ボタン */}
+          <div className="flex items-center gap-1.5 px-2 pt-1.5">
+            <div className="flex items-center rounded bg-muted p-0.5">
+              <button
+                onClick={() => setViewMode('month')}
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
+                  viewMode === 'month'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.gantt.monthView}
+              </button>
+              <button
+                onClick={() => setViewMode('2weeks')}
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors",
+                  viewMode === '2weeks'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.gantt.twoWeeksView}
+              </button>
             </div>
-            {/* 下段: カラムラベル */}
-            <div className="flex items-center gap-3 px-3 pb-1">
-              <div className="text-xs font-medium text-muted-foreground flex-shrink-0">{t.common.done}</div>
-              <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
-            </div>
+            {todayOffset >= 0 && (
+              <button
+                onClick={scrollToToday}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                title={t.gantt.scrollToToday}
+              >
+                <CalendarDays size={12} />
+                {t.common.today}
+              </button>
+            )}
           </div>
-          {/* 日付ヘッダー */}
-          <div className="flex flex-col">
+          {/* 下段: カラムラベル */}
+          <div className="flex items-center gap-3 px-3 pb-1">
+            <div className="text-xs font-medium text-muted-foreground flex-shrink-0">{t.common.done}</div>
+            <div className="text-xs font-medium text-muted-foreground">{t.gantt.taskName}</div>
+          </div>
+        </div>
+        {/* 日付ヘッダー（横スクロール連動） */}
+        <div className="flex-1 overflow-hidden" ref={headerDateRef}>
+          <div style={{ width: totalDays * dayWidth }} className="flex flex-col">
             {/* 月ヘッダー行 */}
             <div className="flex" style={{ height: MONTH_HEADER_HEIGHT }}>
               {monthHeaders.map((mh, i) => (
@@ -770,7 +773,16 @@ export function GanttView() {
             </div>
           </div>
         </div>
+      </div>
 
+      {/* タスク行（スクロール可能） */}
+      <div className="flex-1 overflow-auto" ref={containerRef} onScroll={syncHeaderScroll}>
+      <div
+        style={{ width: TASK_NAME_WIDTH + totalDays * dayWidth, minHeight: '100%' }}
+        className={cn('relative', (dragState || marquee) ? 'select-none' : '')}
+        onMouseDown={handleMarqueeStart}
+        onDoubleClick={handleChartDoubleClick}
+      >
         {/* タスク行（グループヘッダー含む） */}
         {displayRows.map((row) => {
           if (row.type === 'group-header') {
@@ -1053,7 +1065,7 @@ export function GanttView() {
             className="absolute top-0 left-0 pointer-events-none"
             style={{
               width: TASK_NAME_WIDTH + totalDays * dayWidth,
-              height: HEADER_HEIGHT + displayRows.length * ROW_HEIGHT,
+              height: displayRows.length * ROW_HEIGHT,
             }}
           >
             <defs>
@@ -1089,11 +1101,11 @@ export function GanttView() {
 
               // 先行タスクバーの右端中央
               const x1 = TASK_NAME_WIDTH + (fromEndOffset + 1) * dayWidth - 2
-              const y1 = HEADER_HEIGHT + fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2
+              const y1 = fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2
 
               // 後続タスクバーの左端中央
               const x2 = TASK_NAME_WIDTH + toStartOffset * dayWidth + 2
-              const y2 = HEADER_HEIGHT + toIdx * ROW_HEIGHT + ROW_HEIGHT / 2
+              const y2 = toIdx * ROW_HEIGHT + ROW_HEIGHT / 2
 
               // 水平距離に応じてカーブの制御点を調整
               const dx = Math.abs(x2 - x1)

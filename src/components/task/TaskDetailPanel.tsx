@@ -4,7 +4,7 @@ import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
 import { X, Trash2, StickyNote, SlidersHorizontal, GripVertical, CheckSquare } from 'lucide-react'
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { sanitizeColor, sanitizeUrl } from '@/lib/sanitize'
 import { useI18n, translateFieldName, translateOptionLabel } from '@/i18n'
@@ -108,7 +108,7 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             {sortedFields
-              .filter((f) => f.id !== SYSTEM_FIELD_IDS.NOTES)
+              .filter((f) => f.id !== SYSTEM_FIELD_IDS.NOTES && (f.isSystem || f.visible !== false))
               .map((field) => (
               <DetailField
                 key={field.id}
@@ -370,8 +370,11 @@ function DetailEditor({
           type="date"
           defaultValue={value != null ? String(value) : ''}
           className="rounded border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onChange={(e) => onSave(e.target.value || undefined)}
-          onKeyDown={handleKeyDown}
+          onBlur={(e) => onSave(e.target.value || undefined)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onSave((e.target as HTMLInputElement).value || undefined)
+            handleKeyDown(e)
+          }}
         />
       )
     case 'person':
@@ -703,6 +706,26 @@ function MemoSection({
     setEditing(false)
   }
 
+  // 表示モードでチェックボックスをクリックした時のトグル処理
+  const toggleCheckbox = useCallback((checkboxIndex: number) => {
+    if (!value) return
+    const lines = value.split('\n')
+    let count = 0
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^(\s*[-*+]\s)\[([ x])\]/)
+      if (match) {
+        if (count === checkboxIndex) {
+          const checked = match[2] === 'x'
+          lines[i] = lines[i].replace(/\[([ x])\]/, checked ? '[ ]' : '[x]')
+          break
+        }
+        count++
+      }
+    }
+    const newValue = lines.join('\n')
+    onUpdate(taskId, SYSTEM_FIELD_IDS.NOTES, newValue || undefined)
+  }, [value, taskId, onUpdate])
+
   // カーソル行の先頭にチェックボックスを挿入
   const insertCheckbox = () => {
     const textarea = textareaRef.current
@@ -889,6 +912,39 @@ function MemoSection({
                       </a>
                     ) : (
                       <span>{children}</span>
+                    )
+                  },
+                  input: (() => {
+                    let checkboxCount = 0
+                    return ({ type, checked, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
+                      if (type !== 'checkbox') return <input type={type} checked={checked} {...props} />
+                      const index = checkboxCount++
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCheckbox(index)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="cursor-pointer accent-primary"
+                          {...props}
+                          disabled={false}
+                        />
+                      )
+                    }
+                  })(),
+                  li: ({ children, className, ...props }) => {
+                    const isTaskItem = className?.includes('task-list-item')
+                    // チェック済みかは子要素の checkbox の checked 属性から判定
+                    const isChecked = isTaskItem && Array.isArray(children) && children.some(
+                      (child) => typeof child === 'object' && child !== null && 'props' in child && child.props?.checked
+                    )
+                    return (
+                      <li
+                        className={cn(className, isChecked && 'line-through text-muted-foreground')}
+                        {...props}
+                      >
+                        {children}
+                      </li>
                     )
                   },
                 }}

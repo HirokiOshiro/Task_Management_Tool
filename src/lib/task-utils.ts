@@ -1,4 +1,5 @@
 import type { Task, FieldDefinition } from '@/types/task'
+import { SYSTEM_FIELD_IDS } from '@/types/task'
 import type { FilterRule } from '@/types/view'
 
 /** フィルタを適用 */
@@ -9,11 +10,45 @@ export function applyFilters(
 ): Task[] {
   if (filters.length === 0) return tasks
 
+  // 日付範囲重複フィルタとその他を分離
+  const dateRangeFilters = filters.filter((f) => f.operator === 'date_range_overlaps')
+  const normalFilters = filters.filter((f) => f.operator !== 'date_range_overlaps')
+
   return tasks.filter((task) => {
-    return filters.every((filter) => {
+    // 通常フィルタ（AND結合）
+    const normalPass = normalFilters.every((filter) => {
       const value = task.fieldValues[filter.fieldId]
       return evaluateFilter(value, filter, fields)
     })
+    if (!normalPass) return false
+
+    // 日付範囲重複フィルタ
+    for (const filter of dateRangeFilters) {
+      const range = filter.value as { start: string; end: string } | null
+      if (!range) continue
+
+      const taskStart = task.fieldValues[SYSTEM_FIELD_IDS.START_DATE] as string | undefined
+      const taskEnd = task.fieldValues[SYSTEM_FIELD_IDS.DUE_DATE] as string | undefined
+
+      // 開始日・期限の両方が未設定なら非表示
+      if (!taskStart && !taskEnd) return false
+
+      const rangeStart = new Date(range.start)
+      const rangeEnd = new Date(range.end)
+
+      // 片方のみの場合: その日付が範囲内にあるか
+      if (taskStart && !taskEnd) {
+        if (new Date(taskStart) > rangeEnd) return false
+      } else if (!taskStart && taskEnd) {
+        if (new Date(taskEnd) < rangeStart) return false
+      } else {
+        // 両方設定されている場合: 期間が重なるか
+        // taskStart <= rangeEnd AND taskEnd >= rangeStart
+        if (new Date(taskStart!) > rangeEnd || new Date(taskEnd!) < rangeStart) return false
+      }
+    }
+
+    return true
   })
 }
 
