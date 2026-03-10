@@ -182,6 +182,7 @@ export const en: Locale = {
     noDependencies: 'No dependencies',
     cycleDetected: 'Circular dependency detected',
     searchTasks: 'Search tasks...',
+    toggleFields: 'Property visibility',
   },
 
   // ── Table View ──

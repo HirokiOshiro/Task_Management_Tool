@@ -1,5 +1,6 @@
 import { useTaskStore } from '@/stores/task-store'
 import { useUIStore } from '@/stores/ui-store'
+import { useViewStore } from '@/stores/view-store'
 import { useToastStore } from '@/stores/toast-store'
 import type { FieldDefinition } from '@/types/task'
 import { SYSTEM_FIELD_IDS } from '@/types/task'
@@ -54,8 +55,10 @@ export function TaskDetailPanel() {
 
 function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof useTaskStore.getState>['tasks'][number]; sortedFields: ReturnType<typeof useTaskStore.getState>['fields'] }) {
   const { closeDetailPanel } = useUIStore()
-  const { updateTask, deleteTask, updateFieldOptions } = useTaskStore()
+  const { updateTask, deleteTask, updateFieldOptions, updateField } = useTaskStore()
+  const { views, updateView } = useViewStore()
   const [optionEditFieldId, setOptionEditFieldId] = useState<string | null>(null)
+  const [showFieldToggle, setShowFieldToggle] = useState(false)
   const { t, lang } = useI18n()
 
   // 開始日が変更されたときに期限を自動設定する
@@ -85,6 +88,16 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
           <h2 className="text-sm font-semibold text-muted-foreground">{t.taskDetail.title}</h2>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setShowFieldToggle((v) => !v)}
+              className={cn(
+                "rounded p-1.5 text-muted-foreground hover:bg-accent",
+                showFieldToggle && "bg-accent text-foreground"
+              )}
+              title={t.taskDetail.toggleFields}
+            >
+              <SlidersHorizontal size={16} />
+            </button>
+            <button
               onClick={() => {
                 deleteTask(task.id)
                 closeDetailPanel()
@@ -104,11 +117,47 @@ function TaskDetailContent({ task, sortedFields }: { task: ReturnType<typeof use
           </div>
         </div>
 
+        {/* プロパティ表示設定ドロップダウン */}
+        {showFieldToggle && (
+          <div className="border-b border-border px-4 py-2 bg-muted/30">
+            <div className="text-xs font-medium text-muted-foreground mb-1.5">{t.taskDetail.toggleFields}</div>
+            <div className="grid grid-cols-2 gap-1">
+              {sortedFields
+                .filter((f) => f.id !== SYSTEM_FIELD_IDS.TITLE && f.id !== SYSTEM_FIELD_IDS.NOTES)
+                .map((field) => (
+                  <label
+                    key={field.id}
+                    className="flex items-center gap-1.5 rounded px-1.5 py-1 text-xs hover:bg-accent cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={field.visible !== false}
+                      onChange={() => {
+                        const newVisible = !(field.visible !== false)
+                        updateField(field.id, { visible: newVisible })
+                        for (const view of views) {
+                          const ids = view.visibleFieldIds
+                          if (newVisible && !ids.includes(field.id)) {
+                            updateView(view.id, { visibleFieldIds: [...ids, field.id] })
+                          } else if (!newVisible && ids.includes(field.id)) {
+                            updateView(view.id, { visibleFieldIds: ids.filter((id) => id !== field.id) })
+                          }
+                        }
+                      }}
+                      className="accent-primary"
+                    />
+                    <span className="truncate">{translateFieldName(t, field.id, field.name)}</span>
+                  </label>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* フィールド一覧 + メモ */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
             {sortedFields
-              .filter((f) => f.id !== SYSTEM_FIELD_IDS.NOTES && (f.isSystem || f.visible !== false))
+              .filter((f) => f.id !== SYSTEM_FIELD_IDS.NOTES && f.visible !== false)
               .map((field) => (
               <DetailField
                 key={field.id}

@@ -180,6 +180,7 @@ export const ja = {
     noDependencies: '依存関係なし',
     cycleDetected: '循環依存が検出されました',
     searchTasks: 'タスクを検索…',
+    toggleFields: 'プロパティ表示設定',
   },
 
   // ── Table View ──
@@ -452,6 +453,7 @@ export type Locale = {
     noDependencies: string
     cycleDetected: string
     searchTasks: string
+    toggleFields: string
   }
   table: {
     deleteTask: string
